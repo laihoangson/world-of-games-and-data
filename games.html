@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Games - Hoang Son Lai</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="index.html" class="logo">World of Games</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="introduction.html">Introduction</a></li>
+                <li><a href="games.html" class="active">Games</a></li>
+                <li><a href="analysis.html">Analysis</a></li>
+                <li><a href="about.html">About Me</a></li>
+            </ul>
+        </div>
+        <div class="navbar-right">
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search...">
+            </div>
+                <ul class="nav-icons">
+                    <li><a href="https://github.com/laihoangson" target="_blank">
+                        <i class="fab fa-github"></i>
+                    </a></li>
+
+                    <li><a href="https://www.linkedin.com/in/hoang-son-lai-92ab19282/" target="_blank">
+                        <i class="fab fa-linkedin"></i>
+                    </a></li>
+                </ul>
+        </div>
+    </nav>
+
+    <!-- Games Content -->
+    <section class="content-section">
+        <h2 class="section-title">My Games Collection</h2>
+        
+        <div class="games-container">
+            <div class="game-card" onclick="openGame('games/ball.html')">
+                <div class="game-icon">
+                    <i class="fas fa-basketball-ball"></i>
+                </div>
+                <div class="game-info">
+                    <h3 class="game-title">Bouncing Ball</h3>
+                    <p class="game-description">A fun physics-based game with a bouncing ball. Click to play!</p>
+                </div>
+            </div>
+
+            <div class="game-card" onclick="openGame('games/piano&cat.html')">
+                <div class="game-icon">
+                    <i class="fas fa-music"></i>
+                </div>
+                <div class="game-info">
+                    <h3 class="game-title">Piano & Cat</h3>
+                    <p class="game-description">Play piano with a cute cat companion. Click to play!</p>
+                </div>
+            </div>
+
+            <div class="game-card" onclick="openGame('games/plane.html')">
+                <div class="game-icon">
+                    <i class="fas fa-plane"></i>
+                </div>
+                <div class="game-info">
+                    <h3 class="game-title">Plane Adventure</h3>
+                    <p class="game-description">Fly through obstacles in this exciting plane game. Click to play!</p>
+                </div>
+            </div>
+
+            <div class="game-card" onclick="openGame('games/snake.html')">
+                <div class="game-icon">
+                    <i class="fas fa-snake"></i>
+                </div>
+                <div class="game-info">
+                    <h3 class="game-title">Snake Game</h3>
+                    <p class="game-description">Classic snake game with modern twists. Click to play!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flappy Plane Adventure</title>
+<style>
+body { 
+  margin: 0; 
+  overflow: hidden; 
+  background: linear-gradient(to bottom, #1e5799, #207cca);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+canvas { 
+  display: block; 
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: white;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  z-index: 10;
+}
+#guideBtn {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: all 0.2s;
+  font-size: 20px;
+}
+#guideBtn:hover { 
+  background: rgba(0, 0, 0, 0.8);
+  transform: translateY(-2px);
+}
+#author { 
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+#scoreBoard {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 10px 20px;
+  border-radius: 30px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#lives {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 5px;
+  z-index: 10;
+}
+
+.heart {
+  font-size: 24px;
+  filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));
+}
+</style>
+</head>
+<body>
+<div id="ui">
+  <button id="guideBtn">Guide</button>
+</div>
+
+<div id="scoreBoard">
+  <span>Score:</span>
+  <span id="scoreValue">0</span>
+</div>
+<div id="lives"></div>
+<div id="author">Created by: Hoang Son Lai</div>
+<canvas id="gameCanvas"></canvas>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+// Mở rộng kích thước canvas
+canvas.width = 600;
+canvas.height = 800;
+
+// Game state
+let showGuide = false;
+let plane = { x: 100, y: 400, width: 50, height: 25, dy: 0, gravity: 0.4, jump: -8, lives: 5 };
+
+// Game objects
+let pipes = [], coins = [], enemies = [], bullets = [], enemyBullets = [];
+let frame = 0, score = 0, gameOver = false;
+
+// Create pipe + coin + UFO enemy
+function createPipe() {
+    let topHeight = Math.random()*200+100;
+    let gap = 220;
+    pipes.push({ x: canvas.width, y:0, width:70, height:topHeight });
+    pipes.push({ x: canvas.width, y:topHeight+gap, width:70, height:canvas.height-(topHeight+gap) });
+    coins.push({ x:canvas.width+35, y:topHeight+gap/2-10, width:25, height:25, collected:false });
+    enemies.push({ 
+        x: canvas.width+35, y: topHeight+gap/2-15, width:35, height:20, alive:true, 
+        dy:1, topY:topHeight, bottomY:topHeight+gap-20, 
+        shootCooldown: Math.floor(Math.random()*100+50)
+    });
+}
+
+// Update game
+function update() {
+    if(showGuide || gameOver) return;
+    plane.dy += plane.gravity; plane.y += plane.dy;
+
+    // Pipes
+    for(let p of pipes){
+        p.x -= 2;
+        if(plane.x < p.x+p.width && plane.x+plane.width > p.x &&
+           plane.y < p.y+p.height && plane.y+plane.height > p.y){
+            gameOver = true;
+        }
+    }
+
+    // Coins
+    for(let c of coins){
+        c.x -= 2;
+        if(!c.collected && plane.x < c.x+c.width && plane.x+plane.width>c.x &&
+           plane.y < c.y+c.height && plane.y+plane.height>c.y){
+            score++; 
+            c.collected=true;
+            document.getElementById('scoreValue').textContent = score;
+        }
+    }
+
+    // Enemies
+    for(let e of enemies){
+        e.x -= 2; e.y += e.dy;
+        if(e.y<e.topY || e.y+e.height>e.bottomY) e.dy*=-1;
+
+        // Trúng UFO → mất 1 trái tim
+        if(plane.x<e.x+e.width && plane.x+plane.width>e.x &&
+           plane.y<e.y+e.height && plane.y+plane.height>e.y){
+            plane.lives--;
+            updateLivesDisplay();
+            e.alive=false; // UFO bị hủy khi đâm
+            if(plane.lives<=0) gameOver=true;
+        }
+
+        e.shootCooldown--;
+        if(e.shootCooldown<=0){
+            enemyBullets.push({ x:e.x-5, y:e.y+e.height/2-2, width:10, height:5 });
+            e.shootCooldown=Math.floor(Math.random()*100+50);
+        }
+    }
+
+    // Player bullets
+    for(let b of bullets){
+        b.x+=5;
+        for(let e of enemies){
+            if(e.alive && b.x < e.x+e.width && b.x+b.width>e.x &&
+               b.y < e.y+e.height && b.y+b.height>e.y){
+                e.alive=false; b.hit=true; score+=3;
+                document.getElementById('scoreValue').textContent = score;
+            }
+        }
+    }
+
+    // Enemy bullets
+    for(let eb of enemyBullets){
+        eb.x-=4;
+        if(plane.x<eb.x+eb.width && plane.x+plane.width>eb.x &&
+           plane.y<eb.y+eb.height && plane.y+plane.height>eb.y){
+            plane.lives--;
+            updateLivesDisplay();
+            eb.hit=true;
+            if(plane.lives<=0) gameOver=true;
+        }
+    }
+
+    // Remove offscreen
+    pipes = pipes.filter(p=>p.x+p.width>0);
+    coins = coins.filter(c=>c.x+c.width>0);
+    enemies = enemies.filter(e=>e.x+e.width>0 && e.alive);
+    bullets = bullets.filter(b=>b.x<canvas.width && !b.hit);
+    enemyBullets = enemyBullets.filter(eb=>eb.x+eb.width>0 && !eb.hit);
+
+    if(plane.y+plane.height>canvas.height || plane.y<0) gameOver=true;
+    if(frame%120===0) createPipe();
+    frame++;
+}
+
+// Draw plane with improved design
+function drawPlane(x,y,w,h){
+    ctx.save(); 
+    ctx.translate(x,y);
+    
+    // Main body
+    ctx.fillStyle = '#FF5252';
+    ctx.beginPath(); 
+    ctx.moveTo(0, h/2); 
+    ctx.lineTo(w, 0); 
+    ctx.lineTo(w, h); 
+    ctx.closePath(); 
+    ctx.fill();
+    
+    // Add details
+    ctx.fillStyle = '#D32F2F';
+    ctx.beginPath();
+    ctx.moveTo(w*0.3, h);
+    ctx.lineTo(w*0.3, h+10);
+    ctx.lineTo(w*0.6, h);
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.moveTo(w*0.3, 0);
+    ctx.lineTo(w*0.3, -10);
+    ctx.lineTo(w*0.6, 0);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Cockpit
+    ctx.fillStyle = '#64B5F6';
+    ctx.beginPath();
+    ctx.ellipse(w*0.7, h/2, w*0.15, h*0.3, 0, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Engine details
+    ctx.fillStyle = '#424242';
+    ctx.fillRect(w*0.1, h*0.3, w*0.15, h*0.4);
+    ctx.fillRect(w*0.1, h*0.3-5, w*0.15, 5);
+    ctx.fillRect(w*0.1, h*0.7, w*0.15, 5);
+    
+    ctx.restore();
+}
+
+// Draw UFO with improved design
+function drawUFO(e){
+    ctx.save(); 
+    ctx.translate(e.x, e.y);
+    
+    // Main body
+    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, e.width/2);
+    gradient.addColorStop(0, '#7B1FA2');
+    gradient.addColorStop(1, '#4A148C');
+    ctx.fillStyle = gradient;
+    ctx.beginPath(); 
+    ctx.ellipse(0, 0, e.width/2, e.height/2, 0, 0, Math.PI*2); 
+    ctx.fill();
+    
+    // Dome
+    ctx.fillStyle = 'rgba(179, 229, 252, 0.7)';
+    ctx.beginPath(); 
+    ctx.ellipse(0, -2, e.width/4, e.height/4, 0, 0, Math.PI*2); 
+    ctx.fill();
+    
+    // Lights
+    ctx.fillStyle = '#00E676';
+    ctx.beginPath();
+    ctx.arc(-e.width/4, e.height/3, 2, 0, Math.PI*2);
+    ctx.fill();
+    
+    ctx.fillStyle = '#FF4081';
+    ctx.beginPath();
+    ctx.arc(e.width/4, e.height/3, 2, 0, Math.PI*2);
+    ctx.fill();
+    
+    ctx.restore();
+}
+
+// Draw pipes with improved design
+function drawPipe(x, y, width, height) {
+    // Pipe body
+    const gradient = ctx.createLinearGradient(x, y, x + width, y);
+    gradient.addColorStop(0, '#388E3C');
+    gradient.addColorStop(1, '#2E7D32');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x, y, width, height);
+    
+    // Pipe rim
+    ctx.fillStyle = '#1B5E20';
+    ctx.fillRect(x - 5, y, 5, height);
+    
+    // Pipe top/bottom
+    if (y === 0) {
+        // Top pipe
+        ctx.fillRect(x - 5, height, width + 5, 25);
+    } else {
+        // Bottom pipe
+        ctx.fillRect(x - 5, y - 25, width + 5, 25);
+    }
+}
+
+// Draw coins with improved design
+function drawCoin(c) {
+    if (c.collected) return;
+    
+    ctx.save();
+    ctx.translate(c.x + c.width/2, c.y + c.height/2);
+    
+    // Outer gold circle
+    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, c.width/2);
+    gradient.addColorStop(0, '#FFD740');
+    gradient.addColorStop(1, '#FFAB00');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(0, 0, c.width/2, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Inner circle
+    ctx.fillStyle = '#FFC400';
+    ctx.beginPath();
+    ctx.arc(0, 0, c.width/3, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Shine effect
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.beginPath();
+    ctx.ellipse(-c.width/6, -c.width/6, c.width/8, c.width/5, Math.PI/4, 0, Math.PI*2);
+    ctx.fill();
+    
+    ctx.restore();
+}
+
+// Draw heart for lives
+function drawHeart(x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    
+    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+    gradient.addColorStop(0, '#FF5252');
+    gradient.addColorStop(1, '#D32F2F');
+    ctx.fillStyle = gradient;
+    
+    ctx.beginPath();
+    let topCurveHeight = size * 0.3;
+    ctx.moveTo(0, topCurveHeight);
+    // left curve
+    ctx.bezierCurveTo(0, 0, -size/2, 0, -size/2, topCurveHeight);
+    // bottom tip
+    ctx.bezierCurveTo(-size/2, (size+topCurveHeight)/2, 0, size, 0, size);
+    // right curve
+    ctx.bezierCurveTo(0, size, size/2, (size+topCurveHeight)/2, size/2, topCurveHeight);
+    ctx.bezierCurveTo(size/2, 0, 0, 0, 0, topCurveHeight);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Add shine
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.beginPath();
+    ctx.ellipse(-size/6, size/6, size/8, size/6, Math.PI/4, 0, Math.PI*2);
+    ctx.fill();
+    
+    ctx.restore();
+}
+
+// Update lives display
+function updateLivesDisplay() {
+    const livesContainer = document.getElementById('lives');
+    livesContainer.innerHTML = '';
+    
+    for (let i = 0; i < plane.lives; i++) {
+        const heart = document.createElement('div');
+        heart.innerHTML = '❤️';
+        heart.className = 'heart';
+        livesContainer.appendChild(heart);
+    }
+}
+
+// Draw game
+function draw(){
+    // Draw sky background
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#87CEEB');
+    gradient.addColorStop(1, '#1E88E5');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw clouds
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    for (let i = 0; i < 3; i++) {
+        const x = (frame * 0.5 + i * 200) % (canvas.width + 200) - 100;
+        const y = 100 + i * 150;
+        drawCloud(x, y, 80);
+    }
+    
+    if(showGuide){
+        drawGuideScreen();
+        return;
+    }
+
+    // Draw game elements
+    pipes.forEach(p => drawPipe(p.x, p.y, p.width, p.height));
+    coins.forEach(drawCoin);
+    enemies.forEach(drawUFO);
+    
+    // Draw bullets
+    ctx.fillStyle = '#FFD740';
+    bullets.forEach(b => {
+        ctx.fillRect(b.x, b.y, b.width, b.height);
+        // Add glow effect
+        ctx.fillStyle = 'rgba(255, 215, 64, 0.3)';
+        ctx.fillRect(b.x-2, b.y-2, b.width+4, b.height+4);
+        ctx.fillStyle = '#FFD740';
+    });
+    
+    // Draw enemy bullets
+    ctx.fillStyle = '#2196F3';
+    enemyBullets.forEach(eb => {
+        ctx.fillRect(eb.x, eb.y, eb.width, eb.height);
+        // Add glow effect
+        ctx.fillStyle = 'rgba(33, 150, 243, 0.3)';
+        ctx.fillRect(eb.x-2, eb.y-2, eb.width+4, eb.height+4);
+        ctx.fillStyle = '#2196F3';
+    });
+    
+    drawPlane(plane.x, plane.y, plane.width, plane.height);
+    
+    // Draw ground
+    ctx.fillStyle = '#5D4037';
+    ctx.fillRect(0, canvas.height - 25, canvas.width, 25);
+    ctx.fillStyle = '#4E342E';
+    ctx.fillRect(0, canvas.height - 25, canvas.width, 5);
+    
+    // Draw lives as hearts in canvas (bỏ phần này vì đã có ở UI)
+    
+    if(gameOver){
+        drawGameOverScreen();
+    }
+}
+
+// Draw cloud
+function drawCloud(x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.5, 0, Math.PI * 2);
+    ctx.arc(size * 0.3, -size * 0.2, size * 0.4, 0, Math.PI * 2);
+    ctx.arc(size * 0.6, 0, size * 0.5, 0, Math.PI * 2);
+    ctx.arc(size * 0.3, size * 0.2, size * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.restore();
+}
+
+// Draw guide screen
+function drawGuideScreen() {
+    // Semi-transparent overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Title
+    ctx.fillStyle = '#FFD740';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('FLAPPY PLANE GUIDE', canvas.width/2, 80);
+    
+    // Instructions
+    ctx.fillStyle = 'white';
+    ctx.font = '20px sans-serif';
+    ctx.textAlign = 'left';
+    
+    const instructions = [
+        '- Press SPACE to make the plane jump',
+        '- Press SPACE to shoot bullets at UFOs',
+        '- Collect coins for +1 point',
+        '- Shoot UFOs for +3 points',
+        '- Avoid pipes, UFOs, and enemy bullets',
+        '- Colliding with UFOs or bullets loses 1 heart'
+    ];
+    
+    instructions.forEach((text, index) => {
+        ctx.fillText(text, 60, 150 + index * 50);
+    });
+    
+    // Start button
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(canvas.width/2 - 100, 500, 200, 60);
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('START GAME', canvas.width/2, 540);
+}
+
+// Draw game over screen
+function drawGameOverScreen() {
+    // Semi-transparent overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Game Over text
+    ctx.fillStyle = '#FF5252';
+    ctx.font = 'bold 56px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2 - 60);
+    
+    // Score
+    ctx.fillStyle = 'white';
+    ctx.font = '28px sans-serif';
+    ctx.fillText(`Final Score: ${score}`, canvas.width/2, canvas.height/2);
+    
+    // Restart instruction
+    ctx.fillStyle = '#FFD740';
+    ctx.font = '24px sans-serif';
+    ctx.fillText('Press SPACE or CLICK to Restart', canvas.width/2, canvas.height/2 + 60);
+}
+
+// Game loop
+function loop(){ 
+    update(); 
+    draw(); 
+    requestAnimationFrame(loop); 
+}
+
+// Event listeners
+document.getElementById('guideBtn').addEventListener('click',() => {
+    showGuide = true;
+});
+
+document.addEventListener('keydown', e => {
+    if(e.code === 'Space'){
+        if(showGuide){ 
+            showGuide = false; 
+            return; 
+        } 
+        if(gameOver){ 
+            resetGame(); 
+            return; 
+        }
+        plane.dy = plane.jump;
+        bullets.push({ x:plane.x+plane.width, y:plane.y+plane.height/2-2, width:10, height:5, hit:false });
+    }
+});
+
+canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    if(showGuide){ 
+        // Check if click is on start button
+        if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
+            y >= 500 && y <= 560) {
+            showGuide = false; 
+        }
+        return; 
+    } 
+    
+    if(gameOver){ 
+        resetGame(); 
+        return; 
+    }
+    
+    plane.dy = plane.jump;
+    bullets.push({ x:plane.x+plane.width, y:plane.y+plane.height/2-2, width:10, height:5, hit:false });
+});
+
+function resetGame(){
+    plane.y = 400; 
+    plane.dy = 0; 
+    plane.lives = 5;
+    pipes = []; 
+    coins = []; 
+    enemies = []; 
+    bullets = []; 
+    enemyBullets = [];
+    score = 0; 
+    frame = 0; 
+    gameOver = false;
+    document.getElementById('scoreValue').textContent = score;
+    updateLivesDisplay();
+}
+
+// Initialize lives display
+updateLivesDisplay();
+loop();
+</script>
+</body>
+</html>
