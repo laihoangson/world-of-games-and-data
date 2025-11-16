@@ -179,19 +179,9 @@ canvas {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* Notification style */
+/* Notification style - Ẩn hoàn toàn */
 #notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: #ff9800;
-  color: white;
-  padding: 15px;
-  border-radius: 5px;
-  z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  display: none;
-  max-width: 300px;
+  display: none !important;
 }
 
 #syncBtn {
@@ -220,7 +210,7 @@ canvas {
 <button id="restartBtn">Play Again</button>
 <div id="author">Created by: Hoang Son Lai</div>
 
-<!-- Thêm notification -->
+<!-- Thêm notification - Đã ẩn hoàn toàn -->
 <div id="notification"></div>
 
 <!-- Thêm start screen -->
@@ -313,11 +303,10 @@ function queueAnalytics(analyticsData) {
     
     localStorage.setItem('pendingPlaneAnalytics', JSON.stringify(pendingAnalytics));
     
-    // CHỈ HIỂN THỊ THÔNG BÁO KHI CÓ NHIỀU HƠN 1 GAME CHƯA ĐỒNG BỘ
-    // VÀ ĐANG TRONG TRẠNG THÁI CHƠI GAME
-    if (pendingAnalytics.length > 1 && gameActive) {
-        showNotification(`${pendingAnalytics.length} games waiting to sync`, 5000);
-    }
+    // KHÔNG HIỂN THỊ THÔNG BÁO NỮA
+    // if (pendingAnalytics.length > 1) {
+    //     showNotification(`${pendingAnalytics.length} games waiting to sync`, 5000);
+    // }
 }
 
 // THÊM: Hàm đồng bộ BATCH - GỬI NHIỀU GAME CÙNG LÚC
@@ -364,18 +353,14 @@ function syncBatchAnalytics() {
         
         localStorage.setItem('pendingPlaneAnalytics', JSON.stringify(pendingAnalytics));
         
-        // CHỈ HIỂN THỊ THÔNG BÁO THÀNH CÔNG KHI ĐANG CHƠI GAME
-        if (gameActive) {
-            showNotification(`Successfully synced ${unsentGames.length} games!`, 3000);
-        }
+        // KHÔNG HIỂN THỊ THÔNG BÁO THÀNH CÔNG
+        // showNotification(`Successfully synced ${unsentGames.length} games!`, 3000);
         isSyncing = false;
     })
     .catch(error => {
         console.log('Batch sync failed:', error);
-        // CHỈ HIỂN THỊ THÔNG BÁO LỖI KHI ĐANG CHƠI GAME
-        if (gameActive) {
-            showNotification('Sync failed - will retry later', 3000);
-        }
+        // KHÔNG HIỂN THỊ THÔNG BÁO LỖI
+        // showNotification('Sync failed - will retry later', 3000);
         isSyncing = false;
     });
 }
@@ -407,30 +392,10 @@ function checkServerConnection() {
     .catch(() => false);
 }
 
-// THÊM: Hiển thị thông báo - SỬA ĐỂ GIẢM THÔNG BÁO
+// THÊM: Hiển thị thông báo - ĐÃ VÔ HIỆU HÓA HOÀN TOÀN
 function showNotification(message, duration = 3000) {
-    // CHỈ HIỂN THỊ THÔNG BÁO KHI ĐANG TRONG GAME VÀ KHÔNG PHẢI MÀN HÌNH START
-    if (!gameActive || !gameStarted) {
-        return;
-    }
-    
-    const notification = document.getElementById('notification');
-    const pendingCount = pendingAnalytics.filter(game => !game.sent).length;
-    
-    let html = `<strong>${message}</strong>`;
-    if (pendingCount > 0 && duration > 0) {
-        html += `<br><small>${pendingCount} games waiting</small>`;
-        html += `<br><button id="syncBtn" onclick="syncBatchAnalytics()">Sync Now</button>`;
-    }
-    
-    notification.innerHTML = html;
-    notification.style.display = 'block';
-    
-    if (duration > 0) {
-        setTimeout(() => {
-            notification.style.display = 'none';
-        }, duration);
-    }
+    // KHÔNG LÀM GÌ CẢ - ẨN HOÀN TOÀN THÔNG BÁO
+    return;
 }
 
 // Create pipe + coin + UFO enemy
@@ -475,8 +440,7 @@ function startGameAnalytics() {
                 setTimeout(syncBatchAnalytics, 1000); // Đồng bộ sau 1 giây
             }
         } else {
-            // KHÔNG HIỂN THỊ THÔNG BÁO "SERVER OFFLINE" KHI BẮT ĐẦU GAME
-            // showNotification('Server offline - data saved locally', 2000);
+            // KHÔNG HIỂN THỊ THÔNG BÁO "SERVER OFFLINE"
         }
     });
 }
@@ -522,8 +486,6 @@ function sendAnalyticsData() {
             queueAnalytics(gameAnalytics);
             isSendingAnalytics = false;
             storeLocalAnalytics();
-            
-            // KHÔNG HIỂN THỊ LOADING ĐỂ TRẢI NGHIỆM MƯỢT HƠN
         });
     }
 }
