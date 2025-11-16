@@ -313,8 +313,9 @@ function queueAnalytics(analyticsData) {
     
     localStorage.setItem('pendingPlaneAnalytics', JSON.stringify(pendingAnalytics));
     
-    // Chỉ hiển thị thông báo nếu có nhiều hơn 1 game chưa đồng bộ
-    if (pendingAnalytics.length > 1) {
+    // CHỈ HIỂN THỊ THÔNG BÁO KHI CÓ NHIỀU HƠN 1 GAME CHƯA ĐỒNG BỘ
+    // VÀ ĐANG TRONG TRẠNG THÁI CHƠI GAME
+    if (pendingAnalytics.length > 1 && gameActive) {
         showNotification(`${pendingAnalytics.length} games waiting to sync`, 5000);
     }
 }
@@ -332,7 +333,8 @@ function syncBatchAnalytics() {
     }
     
     console.log(`Syncing batch of ${unsentGames.length} games...`);
-    showNotification(`Syncing ${unsentGames.length} games...`, 0);
+    // KHÔNG HIỂN THỊ THÔNG BÁO KHI ĐANG ĐỒNG BỘ
+    // showNotification(`Syncing ${unsentGames.length} games...`, 0);
     
     // GỬI TẤT CẢ TRONG MỘT LẦN
     fetch('http://localhost:5000/api/sync-analytics', {
@@ -362,12 +364,18 @@ function syncBatchAnalytics() {
         
         localStorage.setItem('pendingPlaneAnalytics', JSON.stringify(pendingAnalytics));
         
-        showNotification(`Successfully synced ${unsentGames.length} games!`, 3000);
+        // CHỈ HIỂN THỊ THÔNG BÁO THÀNH CÔNG KHI ĐANG CHƠI GAME
+        if (gameActive) {
+            showNotification(`Successfully synced ${unsentGames.length} games!`, 3000);
+        }
         isSyncing = false;
     })
     .catch(error => {
         console.log('Batch sync failed:', error);
-        showNotification('Sync failed - will retry later', 3000);
+        // CHỈ HIỂN THỊ THÔNG BÁO LỖI KHI ĐANG CHƠI GAME
+        if (gameActive) {
+            showNotification('Sync failed - will retry later', 3000);
+        }
         isSyncing = false;
     });
 }
@@ -399,8 +407,13 @@ function checkServerConnection() {
     .catch(() => false);
 }
 
-// THÊM: Hiển thị thông báo
+// THÊM: Hiển thị thông báo - SỬA ĐỂ GIẢM THÔNG BÁO
 function showNotification(message, duration = 3000) {
+    // CHỈ HIỂN THỊ THÔNG BÁO KHI ĐANG TRONG GAME VÀ KHÔNG PHẢI MÀN HÌNH START
+    if (!gameActive || !gameStarted) {
+        return;
+    }
+    
     const notification = document.getElementById('notification');
     const pendingCount = pendingAnalytics.filter(game => !game.sent).length;
     
@@ -462,7 +475,8 @@ function startGameAnalytics() {
                 setTimeout(syncBatchAnalytics, 1000); // Đồng bộ sau 1 giây
             }
         } else {
-            showNotification('Server offline - data saved locally', 2000);
+            // KHÔNG HIỂN THỊ THÔNG BÁO "SERVER OFFLINE" KHI BẮT ĐẦU GAME
+            // showNotification('Server offline - data saved locally', 2000);
         }
     });
 }
