@@ -3,6 +3,9 @@ import sqlite3
 from flask_cors import CORS
 import json
 from datetime import datetime
+import atexit
+import signal
+import sys
 
 app = Flask(__name__)
 CORS(app)  # Cho phép cross-origin requests
@@ -22,11 +25,23 @@ def init_db():
             bullets_fired INTEGER,
             death_reason TEXT,
             game_duration INTEGER,
-            pipes_passed INTEGER
+            pipes_passed INTEGER,
+            received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     conn.commit()
     conn.close()
+
+# THÊM: Hàm xử lý tắt server
+def shutdown_handler(signum=None, frame=None):
+    print("\n🛑 Server is shutting down gracefully...")
+    print("💾 Analytics data has been saved to plane_analytics.db")
+    sys.exit(0)
+
+# Đăng ký handlers cho tắt server
+atexit.register(shutdown_handler)
+signal.signal(signal.SIGINT, shutdown_handler)
+signal.signal(signal.SIGTERM, shutdown_handler)
 
 @app.route('/api/game-analytics', methods=['POST', 'OPTIONS'])
 def receive_analytics():
@@ -37,7 +52,60 @@ def receive_analytics():
         data = request.get_json()
         print("Received analytics data:", data)  # Debug log
         
-        # Store in database
+        # Kiểm tra nếu là mảng (nhiều analytics)
+        if isinstance(data, list):
+            return process_batch_analytics(data)
+        else:
+            return process_single_analytics(data)
+        
+    except Exception as e:
+        print(f"Error storing analytics: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# THÊM: Xử lý batch analytics
+def process_batch_analytics(analytics_list):
+    try:
+        conn = sqlite3.connect('plane_analytics.db')
+        c = conn.cursor()
+        
+        success_count = 0
+        for data in analytics_list:
+            try:
+                c.execute('''
+                    INSERT OR REPLACE INTO game_sessions 
+                    (id, start_time, end_time, score, coins_collected, ufos_shot, bullets_fired, death_reason, game_duration, pipes_passed)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    data.get('gameId'),
+                    data.get('startTime'),
+                    data.get('endTime'),
+                    data.get('score'),
+                    data.get('coinsCollected'),
+                    data.get('ufosShot'),
+                    data.get('bulletsFired'),
+                    data.get('deathReason'),
+                    data.get('gameDuration'),
+                    data.get('pipesPassed')
+                ))
+                success_count += 1
+            except Exception as e:
+                print(f"Error processing game {data.get('gameId')}: {e}")
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'status': 'success', 
+            'message': f'Processed {success_count}/{len(analytics_list)} analytics'
+        }), 200
+        
+    except Exception as e:
+        print(f"Error storing batch analytics: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# THÊM: Xử lý single analytics
+def process_single_analytics(data):
+    try:
         conn = sqlite3.connect('plane_analytics.db')
         c = conn.cursor()
         
@@ -65,6 +133,24 @@ def receive_analytics():
         
     except Exception as e:
         print(f"Error storing analytics: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# THÊM: Endpoint để client đồng bộ dữ liệu local
+@app.route('/api/sync-analytics', methods=['POST', 'OPTIONS'])
+def sync_analytics():
+    if request.method == 'OPTIONS':
+        return '', 200
+        
+    try:
+        data = request.get_json()
+        local_games = data.get('games', [])
+        
+        print(f"Syncing {len(local_games)} local games to server")
+        
+        return process_batch_analytics(local_games)
+        
+    except Exception as e:
+        print(f"Error syncing analytics: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/plane-stats')
@@ -105,7 +191,7 @@ def get_plane_stats():
             for row in c.fetchall()
         ]
         
-# Score distribution với buckets mới: 0-4, 5-9, 10-14, ..., 45-49, 50+
+        # Score distribution với buckets mới
         c.execute('SELECT score FROM game_sessions')
         scores = [row[0] for row in c.fetchall()]
 
@@ -196,4 +282,6 @@ def health_check():
 if __name__ == '__main__':
     init_db()
     print("🚀 Plane Analytics Server starting on http://localhost:5000")
+    print("💾 Data will be saved to plane_analytics.db")
+    print("⚠️  Press Ctrl+C to stop server - data will be preserved")
     app.run(debug=True, port=5000, host='0.0.0.0')

@@ -178,6 +178,32 @@ canvas {
   transform: translateY(-3px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
+
+/* Notification style */
+#notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #ff9800;
+  color: white;
+  padding: 15px;
+  border-radius: 5px;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  display: none;
+  max-width: 300px;
+}
+
+#syncBtn {
+  background: white;
+  color: #ff9800;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-top: 5px;
+  font-weight: bold;
+}
 </style>
 </head>
 <body>
@@ -194,6 +220,9 @@ canvas {
 <button id="restartBtn">Play Again</button>
 <div id="author">Created by: Hoang Son Lai</div>
 
+<!-- Thêm notification -->
+<div id="notification"></div>
+
 <!-- Thêm start screen -->
 <div id="startScreen">
   <h1 style="font-size: 48px; margin-bottom: 20px; color: #FFD740;">FLAPPY PLANE ADVENTURE</h1>
@@ -204,6 +233,7 @@ canvas {
       <p>💰 <strong>Collect coins</strong> for +1 point</p>
       <p>👽 <strong>Shoot UFOs</strong> for +3 points</p>
       <p>❤️ <strong>You have 5 lives</strong> - avoid pipes, UFOs and enemy bullets</p>
+      <p>💾 <strong>Data is saved locally</strong> when server is offline</p>
     </div>
     <button id="startButton">Start Game</button>
   </div>
@@ -233,8 +263,13 @@ let gameAnalytics = {
     bulletsFired: 0,
     deathReason: null,
     gameDuration: 0,
-    pipesPassed: 0
+    pipesPassed: 0,
+    sent: false // THÊM: Đánh dấu đã gửi thành công
 };
+
+// THÊM: Hàng đợi analytics chưa gửi được
+let pendingAnalytics = JSON.parse(localStorage.getItem('pendingPlaneAnalytics') || '[]');
+let isSyncing = false; // THÊM: Tránh đồng bộ trùng lặp
 
 // Game state - THÊM BIẾN KIỂM SOÁT
 let showGuide = false;
@@ -245,13 +280,13 @@ let plane = {
     height: 25, 
     dy: 0, 
     gravity: 0.4, 
-    jump: -8, // TĂNG LỰC NHẢY LÊN -8 → -10
+    jump: -8,
     lives: 5,
-    speed: 7 // THÊM TỐC ĐỘ DI CHUYỂN NGANG
+    speed: 7
 };
 let isSendingAnalytics = false;
 let gameStarted = false;
-let gameActive = false; // THÊM: Phân biệt game đang chạy và đã kết thúc
+let gameActive = false;
 
 // Game objects
 let pipes = [], coins = [], enemies = [], bullets = [], enemyBullets = [];
@@ -259,11 +294,131 @@ let frame = 0, score = 0, gameOver = false;
 let pipesPassed = 0;
 
 // TĂNG TỐC ĐỘ DI CHUYỂN CỦA CÁC VẬT THỂ
-const PIPE_SPEED = 3; // Tăng từ 2 → 3
-const ENEMY_SPEED = 3; // Tăng từ 2 → 3
-const COIN_SPEED = 3; // Tăng từ 2 → 3
-const BULLET_SPEED = 7; // Tăng từ 5 → 7
-const ENEMY_BULLET_SPEED = 6; // Tăng từ 4 → 5
+const PIPE_SPEED = 3;
+const ENEMY_SPEED = 3;
+const COIN_SPEED = 3;
+const BULLET_SPEED = 7;
+const ENEMY_BULLET_SPEED = 6;
+
+// THÊM: Hàm lưu analytics vào hàng đợi
+function queueAnalytics(analyticsData) {
+    analyticsData.timestamp = new Date().toISOString();
+    analyticsData.sent = false;
+    pendingAnalytics.push(analyticsData);
+    
+    // Giới hạn kích thước hàng đợi
+    if (pendingAnalytics.length > 100) {
+        pendingAnalytics = pendingAnalytics.slice(-100);
+    }
+    
+    localStorage.setItem('pendingPlaneAnalytics', JSON.stringify(pendingAnalytics));
+    
+    // Chỉ hiển thị thông báo nếu có nhiều hơn 1 game chưa đồng bộ
+    if (pendingAnalytics.length > 1) {
+        showNotification(`${pendingAnalytics.length} games waiting to sync`, 5000);
+    }
+}
+
+// THÊM: Hàm đồng bộ BATCH - GỬI NHIỀU GAME CÙNG LÚC
+function syncBatchAnalytics() {
+    if (isSyncing || pendingAnalytics.length === 0) return;
+    
+    isSyncing = true;
+    const unsentGames = pendingAnalytics.filter(game => !game.sent);
+    
+    if (unsentGames.length === 0) {
+        isSyncing = false;
+        return;
+    }
+    
+    console.log(`Syncing batch of ${unsentGames.length} games...`);
+    showNotification(`Syncing ${unsentGames.length} games...`, 0);
+    
+    // GỬI TẤT CẢ TRONG MỘT LẦN
+    fetch('http://localhost:5000/api/sync-analytics', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ games: unsentGames })
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Network response was not ok');
+    })
+    .then(data => {
+        console.log('Batch sync successful:', data);
+        
+        // ĐÁNH DẤU TẤT CẢ ĐÃ GỬI THÀNH CÔNG
+        const successfulIds = new Set(unsentGames.map(game => game.gameId));
+        pendingAnalytics = pendingAnalytics.map(game => 
+            successfulIds.has(game.gameId) ? { ...game, sent: true } : game
+        );
+        
+        // LỌC RA NHỮNG GAME ĐÃ GỬI THÀNH CÔNG (giữ lại những game chưa gửi được)
+        pendingAnalytics = pendingAnalytics.filter(game => !game.sent);
+        
+        localStorage.setItem('pendingPlaneAnalytics', JSON.stringify(pendingAnalytics));
+        
+        showNotification(`Successfully synced ${unsentGames.length} games!`, 3000);
+        isSyncing = false;
+    })
+    .catch(error => {
+        console.log('Batch sync failed:', error);
+        showNotification('Sync failed - will retry later', 3000);
+        isSyncing = false;
+    });
+}
+
+// THÊM: Hàm để phân tích dữ liệu local khi server không khả dụng
+function getLocalAnalytics() {
+    try {
+        const gamesHistory = JSON.parse(localStorage.getItem('planeGamesHistory') || '[]');
+        const pending = JSON.parse(localStorage.getItem('pendingPlaneAnalytics') || '[]');
+        
+        return {
+            gamesHistory: gamesHistory,
+            pendingAnalytics: pending,
+            totalGames: gamesHistory.length + pending.length
+        };
+    } catch (e) {
+        console.log('Error reading local analytics:', e);
+        return { gamesHistory: [], pendingAnalytics: [], totalGames: 0 };
+    }
+}
+
+// THÊM: Kiểm tra kết nối server khi bắt đầu game
+function checkServerConnection() {
+    return fetch('http://localhost:5000/health', {
+        method: 'GET',
+        signal: AbortSignal.timeout(2000) // Timeout sau 2 giây
+    })
+    .then(response => response.ok)
+    .catch(() => false);
+}
+
+// THÊM: Hiển thị thông báo
+function showNotification(message, duration = 3000) {
+    const notification = document.getElementById('notification');
+    const pendingCount = pendingAnalytics.filter(game => !game.sent).length;
+    
+    let html = `<strong>${message}</strong>`;
+    if (pendingCount > 0 && duration > 0) {
+        html += `<br><small>${pendingCount} games waiting</small>`;
+        html += `<br><button id="syncBtn" onclick="syncBatchAnalytics()">Sync Now</button>`;
+    }
+    
+    notification.innerHTML = html;
+    notification.style.display = 'block';
+    
+    if (duration > 0) {
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, duration);
+    }
+}
 
 // Create pipe + coin + UFO enemy
 function createPipe() {
@@ -274,13 +429,13 @@ function createPipe() {
     coins.push({ x:canvas.width+35, y:topHeight+gap/2-10, width:25, height:25, collected:false });
     enemies.push({ 
         x: canvas.width+35, y: topHeight+gap/2-15, width:35, height:20, alive:true, 
-        dy:1.5, // Tăng tốc độ di chuyển lên xuống của UFO
+        dy:1.5,
         topY:topHeight, bottomY:topHeight+gap-20, 
-        shootCooldown: Math.floor(Math.random()*80+40) // Giảm thời gian chờ bắn đạn
+        shootCooldown: Math.floor(Math.random()*80+40)
     });
 }
 
-// Start new game analytics
+// Start new game analytics - TỐI ƯU HÓA
 function startGameAnalytics() {
     gameAnalytics = {
         gameId: 'plane_' + Date.now(),
@@ -292,18 +447,31 @@ function startGameAnalytics() {
         bulletsFired: 0,
         deathReason: null,
         gameDuration: 0,
-        pipesPassed: 0
+        pipesPassed: 0,
+        sent: false
     };
     gameStarted = true;
-    gameActive = true; // Bắt đầu game active
+    gameActive = true;
+    
+    // KIỂM TRA SERVER VÀ ĐỒNG BỘ NHANH
+    checkServerConnection().then(serverOnline => {
+        if (serverOnline) {
+            // Nếu có dữ liệu chờ và chưa đồng bộ, thực hiện đồng bộ batch
+            const unsentCount = pendingAnalytics.filter(game => !game.sent).length;
+            if (unsentCount > 0) {
+                setTimeout(syncBatchAnalytics, 1000); // Đồng bộ sau 1 giây
+            }
+        } else {
+            showNotification('Server offline - data saved locally', 2000);
+        }
+    });
 }
 
-// Send analytics data - SỬA LẠI ĐỂ TRÁNH LỖI
+// Send analytics data - TỐI ƯU HÓA
 function sendAnalyticsData() {
-    if (isSendingAnalytics || !gameAnalytics.gameId) return;
+    if (isSendingAnalytics || !gameAnalytics.gameId || gameAnalytics.sent) return;
     
     isSendingAnalytics = true;
-    showLoadingIndicator();
     
     if (gameAnalytics.gameId) {
         gameAnalytics.endTime = new Date();
@@ -312,19 +480,16 @@ function sendAnalyticsData() {
         
         console.log('Sending analytics:', gameAnalytics);
         
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        
+        // THỬ GỬI TRỰC TIẾP - NHANH HƠN
         fetch('http://localhost:5000/api/game-analytics', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(gameAnalytics),
-            signal: controller.signal
+            signal: AbortSignal.timeout(2000) // Timeout nhanh hơn
         })
         .then(response => {
-            clearTimeout(timeoutId);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
@@ -332,14 +497,19 @@ function sendAnalyticsData() {
         })
         .then(data => {
             console.log('Analytics sent successfully:', data);
-            hideLoadingIndicator();
-            isSendingAnalytics = false;
-        })
-        .catch(error => {
-            console.log('Analytics sending failed:', error);
-            hideLoadingIndicator();
+            gameAnalytics.sent = true;
             isSendingAnalytics = false;
             storeLocalAnalytics();
+        })
+        .catch(error => {
+            console.log('Direct send failed, queuing for batch sync:', error);
+            
+            // THÊM VÀO HÀNG ĐỢI VÀ SẼ ĐỒNG BỘ SAU
+            queueAnalytics(gameAnalytics);
+            isSendingAnalytics = false;
+            storeLocalAnalytics();
+            
+            // KHÔNG HIỂN THỊ LOADING ĐỂ TRẢI NGHIỆM MƯỢT HƠN
         });
     }
 }
@@ -348,13 +518,18 @@ function sendAnalyticsData() {
 function storeLocalAnalytics() {
     try {
         let gamesHistory = JSON.parse(localStorage.getItem('planeGamesHistory') || '[]');
-        gamesHistory.unshift(gameAnalytics);
         
-        if (gamesHistory.length > 100) {
-            gamesHistory = gamesHistory.slice(0, 100);
+        // Chỉ thêm nếu chưa tồn tại
+        const exists = gamesHistory.some(game => game.gameId === gameAnalytics.gameId);
+        if (!exists) {
+            gamesHistory.unshift(gameAnalytics);
+            
+            if (gamesHistory.length > 50) { // Giảm kích thước lưu trữ
+                gamesHistory = gamesHistory.slice(0, 50);
+            }
+            
+            localStorage.setItem('planeGamesHistory', JSON.stringify(gamesHistory));
         }
-        
-        localStorage.setItem('planeGamesHistory', JSON.stringify(gamesHistory));
     } catch (e) {
         console.log('Local storage error:', e);
     }
@@ -378,7 +553,7 @@ function hideStartScreen() {
     document.getElementById('startScreen').style.display = 'none';
 }
 
-// Update game - THÊM KIỂM TRA GAME STATE VÀ TĂNG TỐC ĐỘ
+// Update game
 function update() {
     if(showGuide || gameOver || !gameActive) return;
     
@@ -386,10 +561,10 @@ function update() {
     plane.y += plane.dy;
 
     // Track pipes passed
-    pipesPassed = Math.max(pipesPassed, Math.floor(frame / 100)); // Giảm thời gian tạo ống
+    pipesPassed = Math.max(pipesPassed, Math.floor(frame / 100));
     gameAnalytics.pipesPassed = pipesPassed;
 
-    // Pipes collision - TĂNG TỐC ĐỘ DI CHUYỂN
+    // Pipes collision
     for(let p of pipes){
         p.x -= PIPE_SPEED;
         if(plane.x < p.x+p.width && plane.x+plane.width > p.x &&
@@ -400,7 +575,7 @@ function update() {
         }
     }
 
-    // Coins collection - TĂNG TỐC ĐỘ
+    // Coins collection
     for(let c of coins){
         c.x -= COIN_SPEED;
         if(!c.collected && plane.x < c.x+c.width && plane.x+plane.width>c.x &&
@@ -412,7 +587,7 @@ function update() {
         }
     }
 
-    // Enemies - TĂNG TỐC ĐỘ
+    // Enemies
     for(let e of enemies){
         e.x -= ENEMY_SPEED; 
         e.y += e.dy;
@@ -438,7 +613,7 @@ function update() {
         }
     }
 
-    // Player bullets - TĂNG TỐC ĐỘ
+    // Player bullets
     for(let b of bullets){
         b.x += BULLET_SPEED;
         for(let e of enemies){
@@ -451,7 +626,7 @@ function update() {
         }
     }
 
-    // Enemy bullets - TĂNG TỐC ĐỘ
+    // Enemy bullets
     for(let eb of enemyBullets){
         eb.x -= ENEMY_BULLET_SPEED;
         if(plane.x<eb.x+eb.width && plane.x+plane.width>eb.x &&
@@ -481,22 +656,20 @@ function update() {
         return;
     }
     
-    // Tăng tần suất tạo ống (giảm từ 120 → 100 frame)
     if(frame%100===0) createPipe();
     frame++;
 }
 
-// Xử lý khi game over - SỬA LẠI
+// Xử lý khi game over
 function handleGameOver() {
     if (gameOver) return;
     
     gameOver = true;
-    gameActive = false; // Dừng game active
+    gameActive = false;
     showRestartButton();
     
-    setTimeout(() => {
-        sendAnalyticsData();
-    }, 100);
+    // GỬI NGAY LẬP TỨC - KHÔNG CHỜ
+    sendAnalyticsData();
 }
 
 // Show restart button when game over
@@ -511,14 +684,10 @@ function hideRestartButton() {
     restartBtn.style.display = 'none';
 }
 
-// Các hàm draw... (giữ nguyên)
-
-// Draw plane với improved design
+// Các hàm draw... (giữ nguyên từ code trước)
 function drawPlane(x,y,w,h){
     ctx.save(); 
     ctx.translate(x,y);
-    
-    // Main body
     ctx.fillStyle = '#FF5252';
     ctx.beginPath(); 
     ctx.moveTo(0, h/2); 
@@ -527,7 +696,6 @@ function drawPlane(x,y,w,h){
     ctx.closePath(); 
     ctx.fill();
     
-    // Add details
     ctx.fillStyle = '#D32F2F';
     ctx.beginPath();
     ctx.moveTo(w*0.3, h);
@@ -543,13 +711,11 @@ function drawPlane(x,y,w,h){
     ctx.closePath();
     ctx.fill();
     
-    // Cockpit
     ctx.fillStyle = '#64B5F6';
     ctx.beginPath();
     ctx.ellipse(w*0.7, h/2, w*0.15, h*0.3, 0, 0, Math.PI*2);
     ctx.fill();
     
-    // Engine details
     ctx.fillStyle = '#424242';
     ctx.fillRect(w*0.1, h*0.3, w*0.15, h*0.4);
     ctx.fillRect(w*0.1, h*0.3-5, w*0.15, 5);
@@ -558,12 +724,10 @@ function drawPlane(x,y,w,h){
     ctx.restore();
 }
 
-// Draw UFO với improved design
 function drawUFO(e){
     ctx.save(); 
     ctx.translate(e.x, e.y);
     
-    // Main body
     const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, e.width/2);
     gradient.addColorStop(0, '#7B1FA2');
     gradient.addColorStop(1, '#4A148C');
@@ -572,13 +736,11 @@ function drawUFO(e){
     ctx.ellipse(0, 0, e.width/2, e.height/2, 0, 0, Math.PI*2); 
     ctx.fill();
     
-    // Dome
     ctx.fillStyle = 'rgba(179, 229, 252, 0.7)';
     ctx.beginPath(); 
     ctx.ellipse(0, -2, e.width/4, e.height/4, 0, 0, Math.PI*2); 
     ctx.fill();
     
-    // Lights
     ctx.fillStyle = '#00E676';
     ctx.beginPath();
     ctx.arc(-e.width/4, e.height/3, 2, 0, Math.PI*2);
@@ -592,37 +754,29 @@ function drawUFO(e){
     ctx.restore();
 }
 
-// Draw pipes với improved design
 function drawPipe(x, y, width, height) {
-    // Pipe body
     const gradient = ctx.createLinearGradient(x, y, x + width, y);
     gradient.addColorStop(0, '#388E3C');
     gradient.addColorStop(1, '#2E7D32');
     ctx.fillStyle = gradient;
     ctx.fillRect(x, y, width, height);
     
-    // Pipe rim
     ctx.fillStyle = '#1B5E20';
     ctx.fillRect(x - 5, y, 5, height);
     
-    // Pipe top/bottom
     if (y === 0) {
-        // Top pipe
         ctx.fillRect(x - 5, height, width + 5, 25);
     } else {
-        // Bottom pipe
         ctx.fillRect(x - 5, y - 25, width + 5, 25);
     }
 }
 
-// Draw coins với improved design
 function drawCoin(c) {
     if (c.collected) return;
     
     ctx.save();
     ctx.translate(c.x + c.width/2, c.y + c.height/2);
     
-    // Outer gold circle
     const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, c.width/2);
     gradient.addColorStop(0, '#FFD740');
     gradient.addColorStop(1, '#FFAB00');
@@ -631,13 +785,11 @@ function drawCoin(c) {
     ctx.arc(0, 0, c.width/2, 0, Math.PI*2);
     ctx.fill();
     
-    // Inner circle
     ctx.fillStyle = '#FFC400';
     ctx.beginPath();
     ctx.arc(0, 0, c.width/3, 0, Math.PI*2);
     ctx.fill();
     
-    // Shine effect
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.beginPath();
     ctx.ellipse(-c.width/6, -c.width/6, c.width/8, c.width/5, Math.PI/4, 0, Math.PI*2);
@@ -646,7 +798,6 @@ function drawCoin(c) {
     ctx.restore();
 }
 
-// Draw heart for lives
 function drawHeart(x, y, size) {
     ctx.save();
     ctx.translate(x, y);
@@ -659,17 +810,13 @@ function drawHeart(x, y, size) {
     ctx.beginPath();
     let topCurveHeight = size * 0.3;
     ctx.moveTo(0, topCurveHeight);
-    // left curve
     ctx.bezierCurveTo(0, 0, -size/2, 0, -size/2, topCurveHeight);
-    // bottom tip
     ctx.bezierCurveTo(-size/2, (size+topCurveHeight)/2, 0, size, 0, size);
-    // right curve
     ctx.bezierCurveTo(0, size, size/2, (size+topCurveHeight)/2, size/2, topCurveHeight);
     ctx.bezierCurveTo(size/2, 0, 0, 0, 0, topCurveHeight);
     ctx.closePath();
     ctx.fill();
     
-    // Add shine
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.beginPath();
     ctx.ellipse(-size/6, size/6, size/8, size/6, Math.PI/4, 0, Math.PI*2);
@@ -693,14 +840,12 @@ function updateLivesDisplay() {
 
 // Draw game
 function draw(){
-    // Draw sky background
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, '#87CEEB');
     gradient.addColorStop(1, '#1E88E5');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Draw clouds
     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     for (let i = 0; i < 3; i++) {
         const x = (frame * 0.5 + i * 200) % (canvas.width + 200) - 100;
@@ -713,26 +858,21 @@ function draw(){
         return;
     }
 
-    // Draw game elements
     pipes.forEach(p => drawPipe(p.x, p.y, p.width, p.height));
     coins.forEach(drawCoin);
     enemies.forEach(drawUFO);
     
-    // Draw bullets
     ctx.fillStyle = '#FFD740';
     bullets.forEach(b => {
         ctx.fillRect(b.x, b.y, b.width, b.height);
-        // Add glow effect
         ctx.fillStyle = 'rgba(255, 215, 64, 0.3)';
         ctx.fillRect(b.x-2, b.y-2, b.width+4, b.height+4);
         ctx.fillStyle = '#FFD740';
     });
     
-    // Draw enemy bullets
     ctx.fillStyle = '#2196F3';
     enemyBullets.forEach(eb => {
         ctx.fillRect(eb.x, eb.y, eb.width, eb.height);
-        // Add glow effect
         ctx.fillStyle = 'rgba(33, 150, 243, 0.3)';
         ctx.fillRect(eb.x-2, eb.y-2, eb.width+4, eb.height+4);
         ctx.fillStyle = '#2196F3';
@@ -740,7 +880,6 @@ function draw(){
     
     drawPlane(plane.x, plane.y, plane.width, plane.height);
     
-    // Draw ground
     ctx.fillStyle = '#5D4037';
     ctx.fillRect(0, canvas.height - 25, canvas.width, 25);
     ctx.fillStyle = '#4E342E';
@@ -751,7 +890,6 @@ function draw(){
     }
 }
 
-// Draw cloud
 function drawCloud(x, y, size) {
     ctx.save();
     ctx.translate(x, y);
@@ -767,19 +905,15 @@ function drawCloud(x, y, size) {
     ctx.restore();
 }
 
-// Draw guide screen
 function drawGuideScreen() {
-    // Semi-transparent overlay
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Title
     ctx.fillStyle = '#FFD740';
     ctx.font = 'bold 36px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('FLAPPY PLANE GUIDE', canvas.width/2, 80);
     
-    // Instructions
     ctx.fillStyle = 'white';
     ctx.font = '20px sans-serif';
     ctx.textAlign = 'left';
@@ -797,7 +931,6 @@ function drawGuideScreen() {
         ctx.fillText(text, 60, 150 + index * 50);
     });
     
-    // Start button
     ctx.fillStyle = '#4CAF50';
     ctx.fillRect(canvas.width/2 - 100, 500, 200, 60);
     ctx.fillStyle = 'white';
@@ -806,28 +939,35 @@ function drawGuideScreen() {
     ctx.fillText('START GAME', canvas.width/2, 540);
 }
 
-// Draw game over screen
 function drawGameOverScreen() {
-    // Semi-transparent overlay
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Game Over text
     ctx.fillStyle = '#FF5252';
     ctx.font = 'bold 56px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2 - 60);
     
-    // Score
     ctx.fillStyle = 'white';
     ctx.font = '28px sans-serif';
     ctx.fillText(`Final Score: ${score}`, canvas.width/2, canvas.height/2);
     
-    // Analytics info
     ctx.font = '18px sans-serif';
     ctx.fillText(`Coins: ${gameAnalytics.coinsCollected} | UFOs: ${gameAnalytics.ufosShot} | Bullets: ${gameAnalytics.bulletsFired}`, canvas.width/2, canvas.height/2 + 30);
     
-    // Restart instruction - SỬA: Chỉ hiển thị nút restart, không tự động restart
+    const localData = getLocalAnalytics();
+    ctx.font = '16px sans-serif';
+    if (localData.pendingAnalytics.length > 0) {
+        ctx.fillStyle = '#FFD740';
+        ctx.fillText(`${localData.pendingAnalytics.length} games waiting to sync with server`, canvas.width/2, canvas.height/2 + 60);
+    } else if (gameAnalytics.sent) {
+        ctx.fillStyle = '#4CAF50';
+        ctx.fillText('Game data successfully saved!', canvas.width/2, canvas.height/2 + 60);
+    } else {
+        ctx.fillStyle = '#FF9800';
+        ctx.fillText('Game data saved locally', canvas.width/2, canvas.height/2 + 60);
+    }
+    
     ctx.fillStyle = '#FFD740';
     ctx.font = '24px sans-serif';
     ctx.fillText('Click RESTART button to play again', canvas.width/2, canvas.height/2 + 90);
@@ -849,10 +989,7 @@ document.getElementById('analyticsBtn').addEventListener('click',() => {
     window.location.href = '../analysis.html';
 });
 
-// Thêm event listener cho nút start
 document.getElementById('startButton').addEventListener('click', startGame);
-
-// Thêm event listener cho nút restart
 document.getElementById('restartBtn').addEventListener('click', resetGame);
 
 document.addEventListener('keydown', e => {
@@ -864,7 +1001,6 @@ document.addEventListener('keydown', e => {
             return; 
         } 
         
-        // CHỈ cho phép jump/shoot khi game đang active
         if(gameActive && !gameOver) {
             plane.dy = plane.jump;
             bullets.push({ x:plane.x+plane.width, y:plane.y+plane.height/2-2, width:10, height:5, hit:false });
@@ -873,7 +1009,6 @@ document.addEventListener('keydown', e => {
     }
 });
 
-// SỬA LẠI SỰ KIỆN CLICK
 canvas.addEventListener('click', e => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -887,7 +1022,6 @@ canvas.addEventListener('click', e => {
         return; 
     } 
     
-    // QUAN TRỌNG: CHỈ cho phép click khi game active và không game over
     if(gameActive && !gameOver) {
         plane.dy = plane.jump;
         bullets.push({ x:plane.x+plane.width, y:plane.y+plane.height/2-2, width:10, height:5, hit:false });
@@ -895,14 +1029,12 @@ canvas.addEventListener('click', e => {
     }
 });
 
-// Hàm bắt đầu game từ start screen
 function startGame() {
     hideStartScreen();
     startGameAnalytics();
 }
 
 function resetGame(){
-    // Reset tất cả biến trạng thái
     plane.y = 400; 
     plane.dy = 0; 
     plane.lives = 5;
@@ -922,15 +1054,32 @@ function resetGame(){
     hideRestartButton();
     hideLoadingIndicator();
     
-    // Bắt đầu game mới
     startGameAnalytics();
 }
 
-// Initialize - HIỂN THỊ START SCREEN ĐẦU TIÊN
+// Initialize
 updateLivesDisplay();
 hideRestartButton();
 hideLoadingIndicator();
-showStartScreen(); // HIỂN THỊ MÀN HÌNH BẮT ĐẦU
+showStartScreen();
+
+// THÊM: Kiểm tra và đồng bộ khi khởi động
+window.addEventListener('load', () => {
+    const localData = getLocalAnalytics();
+    const unsentCount = localData.pendingAnalytics.filter(game => !game.sent).length;
+    
+    if (unsentCount > 0) {
+        console.log(`Found ${unsentCount} unsent games`);
+        // Thử đồng bộ sau 3 giây khi trang load xong
+        setTimeout(() => {
+            checkServerConnection().then(online => {
+                if (online) {
+                    syncBatchAnalytics();
+                }
+            });
+        }, 3000);
+    }
+});
 
 loop();
 </script>
