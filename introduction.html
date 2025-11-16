@@ -174,10 +174,61 @@
             align-items: center;
         }
         
-        .analytics-image img {
-            max-width: 100%;
+        .live-server-instruction {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            width: 100%;
+        }
+        
+        .live-server-instruction h3 {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .code-block code {
+            display: block;
+        }
+        
+        .server-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4757;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.running {
+            background: #2ed573;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
         
         /* Games Grid */
@@ -425,11 +476,30 @@
                 </div>
                 
                 <div class="analytics-image">
-                    <!-- Analytics Dashboard Preview -->
-                    <div style="background: linear-gradient(135deg, #667eea, #764ba2); width: 100%; height: 300px; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-weight: bold; padding: 20px; text-align: center;">
-                        <i class="fas fa-chart-bar" style="font-size: 4rem; margin-bottom: 20px;"></i>
-                        <h3>Analytics Dashboard</h3>
-                        <p>Interactive charts and performance metrics</p>
+                    <!-- Live Server Instruction -->
+                    <div class="live-server-instruction">
+                        <h3><i class="fas fa-server"></i> Live Analytics Dashboard</h3>
+                        <p>To view real-time analytics data, start the Python server:</p>
+                        
+                        <div class="code-block">
+                            <code># Open terminal in analytics folder</code>
+                            <code>cd analytics</code>
+                            <code> </code>
+                            <code># Run the analytics server</code>
+                            <code>python analytics_plane.py</code>
+                        </div>
+                        
+                        <p>Server will start on: <strong>http://localhost:5000</strong></p>
+                        
+                        <div class="server-status">
+                            <div class="status-indicator" id="statusIndicator"></div>
+                            <span id="statusText">Server not running</span>
+                        </div>
+                        
+                        <p style="margin-top: 15px; font-size: 0.9rem; opacity: 0.9;">
+                            <i class="fas fa-info-circle"></i> 
+                            Play the Plane game first to generate analytics data
+                        </p>
                     </div>
                 </div>
             </div>
@@ -552,5 +622,29 @@
             <p>&copy; 2023 World of Games. All rights reserved.</p>
         </div>
     </footer>
+
+    <script>
+        // Check if analytics server is running
+        async function checkServerStatus() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            try {
+                const response = await fetch('http://localhost:5000/health', {
+                    method: 'GET',
+                    mode: 'no-cors'
+                });
+                
+                statusIndicator.classList.add('running');
+                statusText.textContent = 'Server is running on port 5000';
+            } catch (error) {
+                statusIndicator.classList.remove('running');
+                statusText.textContent = 'Server not running - Start with instructions above';
+            }
+        }
+        
+        // Check server status when page loads
+        document.addEventListener('DOMContentLoaded', checkServerStatus);
+    </script>
 </body>
 </html>
