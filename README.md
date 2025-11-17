@@ -43,9 +43,7 @@ cd analytics
 
 3. Run the Python analytics server:
 
-```bash
-python analytics_plane.py
-```
+Go to analytics/ folder and run analytics_plane.py in VSCode to open server
 
 4. The server will start on http://localhost:5000
 
