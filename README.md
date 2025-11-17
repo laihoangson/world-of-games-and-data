@@ -18,7 +18,7 @@ Dual application featuring a functional web piano and an endless runner cat game
 ### 🧱 Neon Brick Breaker
 Arcade brick breaker with power-ups, multiple levels, and neon visual effects.
 
-## 🚀 Real-time Analytics System
+## Real-time Analytics System
 
 The Flappy Plane game includes an advanced analytics system that tracks:
 - Player performance metrics
@@ -26,7 +26,7 @@ The Flappy Plane game includes an advanced analytics system that tracks:
 - Death reasons analysis
 - Score distribution
 
-### Running Real-time Analytics
+### 🚀 Running Real-time Analytics
 
 To enable the live analytics dashboard for Flappy Plane:
 
@@ -45,7 +45,7 @@ python analytics_plane.py
 
 4. Open analytics/analysis_plane.html in your browser to view the live dashboard  
 
-## 📊 Data Analysis Report "Game Analytics: From Bootstrapping to Predictive Modeling"
+## Data Analysis Report "Game Analytics: From Bootstrapping to Predictive Modeling"
 
 ### 🔍 Key Analysis Features:
 
