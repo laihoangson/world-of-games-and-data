@@ -1,6 +1,8 @@
-# World of Games 🎮
+# World of Games and Data 🎮
 
-A collection of four interactive web games built with HTML, CSS, and JavaScript.
+## URL
+
+The URL for the website is [https://laihoangson.github.io/world-of-games/](https://laihoangson.github.io/world-of-games/)
 
 ## Games Collection
 
@@ -43,6 +45,4 @@ python analytics_plane.py
 
 4. Open analytics/analysis_plane.html in your browser to view the live dashboard
 
-## URL
 
-The URL for the website is [https://laihoangson.github.io/world-of-games/](https://laihoangson.github.io/world-of-games/)
