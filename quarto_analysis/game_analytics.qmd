@@ -54,12 +54,144 @@ library(kableExtra)
 library(stringr)
 library(tidyr)
 library(forcats)
-library(highcharter)
-library(htmltools)
-library(jsonlite)
+library(caret)
+library(randomForest)
+library(cluster)
+library(factoextra)
+library(corrplot)
+library(ggpubr)
 library(RColorBrewer)
 library(broom)
 library(colorspace)
 library(GGally)
 library(tibble)
+library(highcharter)
+library(htmltools)
+library(jsonlite)
+
+conflicts_prefer(dplyr::filter)
+conflicts_prefer(dplyr::select)
+conflicts_prefer(dplyr::slice)
+conflicts_prefer(plotly::layout)
+
+# Set random seed for reproducibility
+set.seed(123)
 ```
+
+## 1. Data Overview & Preprocessing
+
+```{r}
+# Load and clean the data
+game_data <- read.csv("data/game_sessions.csv", stringsAsFactors = FALSE)
+
+# Data cleaning and preprocessing
+game_data_clean <- game_data %>%
+  mutate(
+    start_time = as.POSIXct(start_time, format = "%Y-%m-%dT%H:%M:%OSZ"),
+    end_time = as.POSIXct(end_time, format = "%Y-%m-%dT%H:%M:%OSZ"),
+    death_reason = as.factor(death_reason),
+    # Handle missing end_time
+    game_duration = ifelse(is.na(game_duration), 0, game_duration),
+    # Create performance metrics
+    score_per_second = ifelse(game_duration > 0, score / game_duration, 0),
+    coins_per_pipe = ifelse(pipes_passed > 0, coins_collected / pipes_passed, 0),
+    accuracy = ifelse(bullets_fired > 0, ufos_shot / bullets_fired, 0)
+  ) %>%
+  filter(!is.na(start_time))  # Remove incomplete records
+
+# Display basic information
+cat("Dataset Dimensions:", dim(game_data_clean), "\n")
+cat("Date Range:", as.character(min(game_data_clean$start_time)), "to", 
+    as.character(max(game_data_clean$start_time)), "\n")
+
+# Summary statistics
+summary_stats <- game_data_clean %>%
+  select(score, game_duration, coins_collected, ufos_shot, bullets_fired, pipes_passed) %>%
+  summary()
+
+# Display table
+game_data_display <- game_data_clean %>%
+  mutate(across(where(is.numeric), ~ round(., 2)))
+
+game_data_display %>%
+  head(10) %>%
+  gt() %>%
+  tab_header(
+    title = "Game Session Data — Preview (10 rows)"
+  ) %>%
+  opt_table_font(
+    font = google_font("Roboto")
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  tab_options(
+    table.width = pct(100),
+    column_labels.padding = px(6),
+    data_row.padding = px(6),
+    table.font.size = px(14)
+  )
+```
+
+## 2. Exploratory Data Analysis
+
+### 2.1 Distribution of Key Metrics
+
+```{r}
+# Create distribution plots
+p1 <- ggplot(game_data_clean, aes(x = score)) +
+  geom_histogram(fill = "steelblue", alpha = 0.7, bins = 30) +
+  labs(title = "Score Distribution", x = "Score", y = "Frequency") +
+  theme_minimal()
+
+p2 <- ggplot(game_data_clean, aes(x = game_duration)) +
+  geom_histogram(fill = "darkorange", alpha = 0.7, bins = 30) +
+  labs(title = "Game Duration Distribution", x = "Duration (seconds)", y = "Frequency") +
+  theme_minimal()
+
+p3 <- ggplot(game_data_clean, aes(x = pipes_passed)) +
+  geom_histogram(fill = "forestgreen", alpha = 0.7, bins = 30) +
+  labs(title = "Pipes Passed Distribution", x = "Pipes Passed", y = "Frequency") +
+  theme_minimal()
+
+p4 <- ggplot(game_data_clean, aes(x = coins_collected)) +
+  geom_histogram(fill = "goldenrod", alpha = 0.7, bins = 30) +
+  labs(title = "Coins Collected Distribution", x = "Coins", y = "Frequency") +
+  theme_minimal()
+
+ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+```
+
+### 2.2 Death Reason Analysis
+
+```{r}
+death_summary <- game_data_clean %>%
+  group_by(death_reason) %>%
+  summarise(
+    count = n(),
+    percentage = n() / nrow(game_data_clean) * 100,
+    avg_score = mean(score),
+    avg_duration = mean(game_duration)
+  ) %>%
+  arrange(desc(count))
+
+# Visualization
+p_death <- ggplot(death_summary, aes(x = reorder(death_reason, -count), y = count, fill = death_reason)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(percentage, 1), "%")), vjust = -0.5) +
+  labs(title = "Death Reason Distribution", 
+       x = "Death Reason", 
+       y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p_death_score <- ggplot(game_data_clean, aes(x = death_reason, y = score, fill = death_reason)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Score by Death Reason", x = "Death Reason", y = "Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggarrange(p_death, p_death_score, ncol = 2)
+```
+
