@@ -176,6 +176,19 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
+        .info-banner {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-banner.warning {
+            background: #ffecb3;
+            border-left: 4px solid #ffc107;
+        }
+
         @media (max-width: 768px) {
             .charts-container, .scatter-charts {
                 grid-template-columns: 1fr;
@@ -197,6 +210,8 @@
             <h1>🚀 Flappy Plane Analytics</h1>
             <p>Detailed statistics and performance analysis for the Flappy Plane adventures</p>
         </div>
+
+        <div id="connectionStatus"></div>
 
         <div class="stats-grid" id="statsGrid">
             <!-- Stats will be populated by JavaScript -->
@@ -271,6 +286,55 @@
             unknown: '#95a5a6'
         };
 
+        // THÊM: Function để load từ JSON file (fallback)
+        async function loadFromJSON() {
+            try {
+                const response = await fetch('./data/stats.json');
+                if (!response.ok) {
+                    throw new Error('JSON file not found');
+                }
+                const data = await response.json();
+                
+                updateDashboard(data);
+                updateConnectionStatus('json', '✅ Loaded from local data file');
+                console.log('✅ Loaded data from JSON file');
+                
+            } catch (error) {
+                console.log('❌ Cannot load from JSON, using sample data');
+                loadSampleData();
+            }
+        }
+
+        // THÊM: Function để load sample data
+        function loadSampleData() {
+            const sampleData = {
+                total_games: 0,
+                avg_score: 0,
+                max_score: 0,
+                avg_duration: 0,
+                avg_bullets: 0,
+                death_reasons: {},
+                recent_games: [],
+                score_distribution: {},
+                all_games: []
+            };
+            
+            updateDashboard(sampleData);
+            updateConnectionStatus('error', '❌ No data available. Connect to the python server first!');
+        }
+
+        // THÊM: Function để update connection status
+        function updateConnectionStatus(type, message) {
+            const statusDiv = document.getElementById('connectionStatus');
+            const statusClass = type === 'error' ? 'info-banner warning' : 'info-banner';
+            
+            statusDiv.innerHTML = `
+                <div class="${statusClass}">
+                    <strong>Connection Status:</strong> ${message}
+                </div>
+            `;
+        }
+
         // Fetch and display analytics data
         async function loadAnalytics() {
             try {
@@ -280,55 +344,48 @@
                 }
                 const data = await response.json();
 
-                // Update stats grid - thêm avg_bullets
-                document.getElementById('statsGrid').innerHTML = `
-                    <div class="stat-card">
-                        <h3>Total Games Played</h3>
-                        <div class="value">${data.total_games}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Average Score</h3>
-                        <div class="value">${data.avg_score}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Highest Score</h3>
-                        <div class="value">${data.max_score}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Avg Duration (s)</h3>
-                        <div class="value">${data.avg_duration}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Avg Bullets Fired</h3>
-                        <div class="value">${data.avg_bullets}</div>
-                    </div>
-                `;
-
-                // Create Death Reasons Donut Chart
-                createDeathReasonsChart(data.death_reasons || {});
-
-                // Create Score Distribution Histogram with new buckets
-                createScoreHistogram(data.score_distribution || {});
-
-                // Create scatter plots
-                createScatterPlots(data.all_games || []);
-
-                // Update recent games table - thêm bullets
-                updateRecentGamesTable(data.recent_games || []);
+                updateDashboard(data);
+                updateConnectionStatus('success', '✅ Connected to live server');
+                console.log('✅ Loaded data from Flask API');
 
             } catch (error) {
-                console.error('Error loading analytics:', error);
-                document.getElementById('statsGrid').innerHTML = `
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #e74c3c;">
-                        <h3>Unable to load analytics data</h3>
-                        <p>Error: ${error.message}</p>
-                        <p>Make sure the analytics server is running on port 5000</p>
-                        <button onclick="loadAnalytics()" style="padding: 10px 20px; margin-top: 10px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                            Retry
-                        </button>
-                    </div>
-                `;
+                console.log('⚠️ Cannot connect to Flask server, trying JSON file...');
+                updateConnectionStatus('warning', '⚠️ Cannot connect to server, trying local data...');
+                loadFromJSON(); // Fallback to JSON
             }
+        }
+
+        // SỬA: Function chính để update dashboard
+        function updateDashboard(data) {
+            // Update stats grid
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card">
+                    <h3>Total Games Played</h3>
+                    <div class="value">${data.total_games || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Average Score</h3>
+                    <div class="value">${data.avg_score || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Highest Score</h3>
+                    <div class="value">${data.max_score || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Avg Duration (s)</h3>
+                    <div class="value">${data.avg_duration || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Avg Bullets Fired</h3>
+                    <div class="value">${data.avg_bullets || 0}</div>
+                </div>
+            `;
+
+            // Create charts
+            createDeathReasonsChart(data.death_reasons || {});
+            createScoreHistogram(data.score_distribution || {});
+            createScatterPlots(data.all_games || []);
+            updateRecentGamesTable(data.recent_games || []);
         }
 
         function createDeathReasonsChart(deathReasons) {
@@ -336,6 +393,31 @@
             
             if (deathChart) {
                 deathChart.destroy();
+            }
+
+            // Kiểm tra nếu có dữ liệu
+            if (Object.keys(deathReasons).length === 0) {
+                deathChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['No Data'],
+                        datasets: [{
+                            data: [1],
+                            backgroundColor: ['#95a5a6'],
+                            borderColor: 'white',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        }
+                    }
+                });
+                return;
             }
 
             const labels = Object.keys(deathReasons).map(reason => 
@@ -384,83 +466,107 @@
                 }
             });
         }
- 
-function createScoreHistogram(scoreBuckets) {
-    const ctx = document.getElementById('scoreChart').getContext('2d');
-    
-    if (scoreChart) {
-        scoreChart.destroy();
-    }
 
-    // Tách và sắp xếp các buckets một cách thông minh
-    const sortedEntries = Object.entries(scoreBuckets).sort((a, b) => {
-        const getBucketValue = (bucket) => {
-            if (bucket === '50+') return 999; // Đặt 50+ ở cuối
-            if (bucket.includes('-')) {
-                return parseInt(bucket.split('-')[0]);
+        function createScoreHistogram(scoreBuckets) {
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+            
+            if (scoreChart) {
+                scoreChart.destroy();
             }
-            return parseInt(bucket);
-        };
-        
-        return getBucketValue(a[0]) - getBucketValue(b[0]);
-    });
 
-    const sortedLabels = sortedEntries.map(entry => entry[0]);
-    const sortedData = sortedEntries.map(entry => entry[1]);
+            // Kiểm tra nếu có dữ liệu
+            if (Object.keys(scoreBuckets).length === 0) {
+                scoreChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['No Data'],
+                        datasets: [{
+                            data: [0],
+                            backgroundColor: 'rgba(102, 126, 234, 0.7)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true },
+                            x: { display: false }
+                        }
+                    }
+                });
+                return;
+            }
 
-    scoreChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: sortedLabels,
-            datasets: [{
-                label: 'Number of Games',
-                data: sortedData,
-                backgroundColor: 'rgba(102, 126, 234, 0.7)',
-                borderColor: 'rgba(102, 126, 234, 1)',
-                borderWidth: 1,
-                borderRadius: 5,
-                borderSkipped: false,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
+            // Tách và sắp xếp các buckets một cách thông minh
+            const sortedEntries = Object.entries(scoreBuckets).sort((a, b) => {
+                const getBucketValue = (bucket) => {
+                    if (bucket === '50+') return 999;
+                    if (bucket.includes('-')) {
+                        return parseInt(bucket.split('-')[0]);
+                    }
+                    return parseInt(bucket);
+                };
+                
+                return getBucketValue(a[0]) - getBucketValue(b[0]);
+            });
+
+            const sortedLabels = sortedEntries.map(entry => entry[0]);
+            const sortedData = sortedEntries.map(entry => entry[1]);
+
+            scoreChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedLabels,
+                    datasets: [{
+                        label: 'Number of Games',
+                        data: sortedData,
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5,
+                        borderSkipped: false,
+                    }]
                 },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `Games: ${context.raw}`;
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Games: ${context.raw}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Games'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Score Range'
+                            },
+                            grid: {
+                                display: false
+                            }
                         }
                     }
                 }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Number of Games'
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)'
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Score Range'
-                    },
-                    grid: {
-                        display: false
-                    }
-                }
-            }
+            });
         }
-    });
-}
 
         function createScatterPlots(games) {
             // Prepare data for scatter plots
@@ -480,6 +586,19 @@ function createScoreHistogram(scoreBuckets) {
                 scoreBulletsChart.destroy();
             }
 
+            // UFOs vs Coins Scatter Plot
+            const ufoCoinCtx = document.getElementById('ufoCoinChart').getContext('2d');
+            if (ufoCoinChart) {
+                ufoCoinChart.destroy();
+            }
+
+            // Kiểm tra nếu có dữ liệu
+            if (games.length === 0) {
+                createEmptyScatterChart(scoreBulletsCtx, 'Score vs Bullets Fired');
+                createEmptyScatterChart(ufoCoinCtx, 'UFOs Shot vs Coins Collected');
+                return;
+            }
+
             scoreBulletsChart = new Chart(scoreBulletsCtx, {
                 type: 'scatter',
                 data: {
@@ -491,16 +610,6 @@ function createScoreHistogram(scoreBuckets) {
                         borderWidth: 1,
                         pointRadius: 6,
                         pointHoverRadius: 8
-                    }, {
-                        type: 'line',
-                        label: 'Trend Line',
-                        data: calculateTrendLine(scoreBulletsData),
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0.4
                     }]
                 },
                 options: {
@@ -510,7 +619,6 @@ function createScoreHistogram(scoreBuckets) {
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    if (context.dataset.type === 'line') return null;
                                     return `Score: ${context.parsed.y}, Bullets: ${context.parsed.x}`;
                                 }
                             }
@@ -539,12 +647,6 @@ function createScoreHistogram(scoreBuckets) {
                 }
             });
 
-            // UFOs vs Coins Scatter Plot
-            const ufoCoinCtx = document.getElementById('ufoCoinChart').getContext('2d');
-            if (ufoCoinChart) {
-                ufoCoinChart.destroy();
-            }
-
             ufoCoinChart = new Chart(ufoCoinCtx, {
                 type: 'scatter',
                 data: {
@@ -556,16 +658,6 @@ function createScoreHistogram(scoreBuckets) {
                         borderWidth: 1,
                         pointRadius: 6,
                         pointHoverRadius: 8
-                    }, {
-                        type: 'line',
-                        label: 'Trend Line',
-                        data: calculateTrendLine(ufoCoinData),
-                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                        borderColor: 'rgba(153, 102, 255, 1)',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0.4
                     }]
                 },
                 options: {
@@ -575,7 +667,6 @@ function createScoreHistogram(scoreBuckets) {
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    if (context.dataset.type === 'line') return null;
                                     return `UFOs: ${context.parsed.y}, Coins: ${context.parsed.x}`;
                                 }
                             }
@@ -605,42 +696,58 @@ function createScoreHistogram(scoreBuckets) {
             });
         }
 
-        // Calculate trend line for scatter plots
-        function calculateTrendLine(data) {
-            if (data.length === 0) return [];
-            
-            const n = data.length;
-            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-            
-            data.forEach(point => {
-                sumX += point.x;
-                sumY += point.y;
-                sumXY += point.x * point.y;
-                sumX2 += point.x * point.x;
+        // THÊM: Function tạo scatter chart rỗng
+        function createEmptyScatterChart(ctx, title) {
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'No Data',
+                        data: [{x: 0, y: 0}],
+                        backgroundColor: 'rgba(200, 200, 200, 0.1)',
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: title,
+                            font: { size: 16 }
+                        },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    }
+                }
             });
-            
-            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-            const intercept = (sumY - slope * sumX) / n;
-            
-            const minX = Math.min(...data.map(p => p.x));
-            const maxX = Math.max(...data.map(p => p.x));
-            
-            return [
-                { x: minX, y: slope * minX + intercept },
-                { x: maxX, y: slope * maxX + intercept }
-            ];
         }
 
         function updateRecentGamesTable(recentGames) {
             const tbody = document.getElementById('recentGamesBody');
             
+            if (recentGames.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            No game data available
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
             tbody.innerHTML = recentGames.map(game => `
                 <tr>
-                    <td style="font-weight: bold; color: #2c3e50;">${game.score}</td>
-                    <td>${game.coins}</td>
-                    <td>${game.ufos}</td>
-                    <td>${game.bullets}</td>
-                    <td>${game.duration}</td>
+                    <td style="font-weight: bold; color: #2c3e50;">${game.score || 0}</td>
+                    <td>${game.coins || 0}</td>
+                    <td>${game.ufos || 0}</td>
+                    <td>${game.bullets || 0}</td>
+                    <td>${game.duration || 0}</td>
                     <td>${(game.death_reason || 'unknown').replace(/_/g, ' ')}</td>
                 </tr>
             `).join('');
