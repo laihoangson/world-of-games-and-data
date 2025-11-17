@@ -30,20 +30,26 @@ The Flappy Plane game includes an advanced analytics system that tracks:
 
 To enable the live analytics dashboard for Flappy Plane:
 
-1. Navigate to the analytics folder:
+1. Clone the repository (if you haven’t already):
+
+```bash
+git clone git@github.com:laihoangson/world-of-games.git
+```
+
+2. Navigate to the analytics folder:
 ```bash
 cd analytics
 ```
 
-2. Run the Python analytics server:
+3. Run the Python analytics server:
 
 ```bash
 python analytics_plane.py
 ```
 
-3. The server will start on http://localhost:5000
+4. The server will start on http://localhost:5000
 
-4. Open analytics/analysis_plane.html in your browser to view the live dashboard  
+5. Open analytics/analysis_plane.html in your browser to view the live dashboard  
 
 ## Data Analysis Report "Game Analytics: From Bootstrapping to Predictive Modeling"
 
