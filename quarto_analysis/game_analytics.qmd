@@ -1,0 +1,65 @@
+---
+title: "Game Analytics: From Bootstrapping to Predictive Modeling"
+author: "Hoang Son Lai"
+date: "Nov 17, 2025"
+format:
+    html: 
+        output-file: game_analytics.html
+        css: "assignment.css"
+        embed-resources: true
+        code-fold: true
+        toc: true
+        toc-depth: 4
+---
+
+```{r}
+#| echo: false
+# Set up chunk for all slides
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.height = 4,
+  fig.align = "center",
+  out.width = "100%",
+  code.line.numbers = FALSE,
+  fig.retina = 4,
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  cache = FALSE,
+  dev.args = list(pointsize = 11)
+)
+```
+
+```{r}
+#| echo: false
+# Load libraries
+library(tidyverse)
+library(conflicted)
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(janitor)
+library(knitr)
+library(scales)
+library(naniar)
+library(lubridate)
+library(tidytext)
+library(viridis)
+library(plotly)
+library(patchwork)
+library(purrr)
+library(gt)
+library(DT)
+library(kableExtra)
+library(stringr)
+library(tidyr)
+library(forcats)
+library(highcharter)
+library(htmltools)
+library(jsonlite)
+library(RColorBrewer)
+library(broom)
+library(colorspace)
+library(GGally)
+library(tibble)
+```

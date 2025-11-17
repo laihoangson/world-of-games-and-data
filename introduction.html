@@ -10,184 +10,196 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
-        
-        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-            color: #333;
-            line-height: 1.6;
-            min-height: 100vh;
         }
-        
+
+        :root {
+            --primary-color: #002F5F;
+            --secondary-color: #006D77;
+            --accent-color: #00c6ff;
+            --text-color: #333;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --neon-color: #00ffff;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
         /* Navbar Styles */
         .navbar {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 15px 5%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            padding: 1rem 5%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             position: sticky;
             top: 0;
             z-index: 1000;
         }
-        
-        .navbar-left {
+
+        .navbar-left, .navbar-right {
             display: flex;
             align-items: center;
         }
-        
+
         .logo {
             font-size: 1.8rem;
-            font-weight: bold;
-            color: #1a2a6c;
+            font-weight: 700;
+            margin-right: 2rem;
+            color: white;
             text-decoration: none;
-            margin-right: 30px;
         }
-        
+
         .nav-links {
             display: flex;
             list-style: none;
         }
-        
+
         .nav-links li {
-            margin: 0 15px;
+            margin: 0 1rem;
         }
-        
+
         .nav-links a {
+            color: white;
             text-decoration: none;
-            color: #333;
             font-weight: 500;
-            transition: color 0.3s;
-            padding: 5px 10px;
-            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
         }
-        
+
         .nav-links a:hover, .nav-links a.active {
-            color: #1a2a6c;
-            background: rgba(26, 42, 108, 0.1);
+            background-color: rgba(255, 255, 255, 0.2);
         }
-        
-        .navbar-right {
-            display: flex;
-            align-items: center;
-        }
-        
-        .search-container {
-            margin-right: 20px;
-        }
-        
-        .search-input {
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            outline: none;
-            width: 200px;
-            transition: all 0.3s;
-        }
-        
-        .search-input:focus {
-            border-color: #1a2a6c;
-            box-shadow: 0 0 5px rgba(26, 42, 108, 0.3);
-        }
-        
+
         .nav-icons {
             display: flex;
             list-style: none;
         }
-        
+
         .nav-icons li {
-            margin-left: 15px;
+            margin: 0 0.5rem;
         }
-        
+
         .nav-icons a {
-            color: #333;
+            color: white;
+            text-decoration: none;
             font-size: 1.2rem;
-            transition: color 0.3s;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
         }
-        
+
         .nav-icons a:hover {
-            color: #1a2a6c;
+            background-color: rgba(255, 255, 255, 0.2);
         }
-        
+
+        .search-container {
+            position: relative;
+            margin-right: 1rem;
+        }
+
+        .search-input {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 20px;
+            outline: none;
+            width: 200px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            width: 250px;
+        }
+
         /* Introduction Content */
         .introduction-container {
             max-width: 1200px;
             margin: 40px auto;
             padding: 0 20px;
         }
-        
+
         .page-header {
             text-align: center;
             margin-bottom: 50px;
-            color: white;
+            color: var(--primary-color);
         }
-        
+
         .page-header h1 {
             font-size: 3rem;
             margin-bottom: 15px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .page-header p {
             font-size: 1.2rem;
             max-width: 800px;
             margin: 0 auto;
             opacity: 0.9;
+            color: var(--dark-color);
         }
-        
+
         /* Analytics Section */
         .analytics-section {
             background: white;
             border-radius: 15px;
             padding: 30px;
             margin-bottom: 50px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
-        
+
         .analytics-header {
             text-align: center;
             margin-bottom: 30px;
-            color: #1a2a6c;
+            color: var(--primary-color);
         }
-        
+
         .analytics-content {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 30px;
         }
-        
+
         .analytics-features {
             padding-right: 20px;
         }
-        
+
         .analytics-features h3 {
             margin-bottom: 15px;
-            color: #1a2a6c;
+            color: var(--primary-color);
         }
-        
+
         .analytics-image {
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        
+
         .live-server-instruction {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
             padding: 25px;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             width: 100%;
         }
-        
+
         .live-server-instruction h3 {
             margin-bottom: 15px;
             text-align: center;
         }
-        
+
         .code-block {
             background: rgba(0, 0, 0, 0.3);
             padding: 15px;
@@ -197,11 +209,11 @@
             font-size: 0.9rem;
             line-height: 1.5;
         }
-        
+
         .code-block code {
             display: block;
         }
-        
+
         .server-status {
             display: flex;
             align-items: center;
@@ -211,7 +223,7 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 5px;
         }
-        
+
         .status-indicator {
             width: 12px;
             height: 12px;
@@ -220,17 +232,17 @@
             margin-right: 10px;
             animation: pulse 2s infinite;
         }
-        
+
         .status-indicator.running {
             background: #2ed573;
         }
-        
+
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
         }
-        
+
         /* Games Grid */
         .games-grid {
             display: grid;
@@ -238,87 +250,87 @@
             gap: 30px;
             margin-bottom: 50px;
         }
-        
+
         .game-card {
             background: white;
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s, box-shadow 0.3s;
         }
-        
+
         .game-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
         }
-        
+
         .game-header {
             padding: 20px;
             text-align: center;
             color: white;
         }
-        
+
         .snake-header {
-            background: linear-gradient(135deg, #00b09b, #96c93d);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
         }
-        
+
         .plane-header {
             background: linear-gradient(135deg, #1a2a6c, #b21f1f);
         }
-        
+
         .piano-header {
             background: linear-gradient(135deg, #8E2DE2, #4A00E0);
         }
-        
+
         .brick-header {
             background: linear-gradient(135deg, #ff6b6b, #ffa726);
         }
-        
+
         .game-header h2 {
             font-size: 1.8rem;
             margin-bottom: 10px;
         }
-        
+
         .game-body {
             padding: 25px;
         }
-        
+
         .game-body p {
             margin-bottom: 15px;
         }
-        
+
         .game-features {
             margin-top: 20px;
         }
-        
+
         .game-features h3 {
             margin-bottom: 10px;
-            color: #1a2a6c;
+            color: var(--primary-color);
             border-bottom: 2px solid #eee;
             padding-bottom: 5px;
         }
-        
+
         .features-list {
             list-style-type: none;
         }
-        
+
         .features-list li {
             padding: 8px 0;
             border-bottom: 1px solid #f0f0f0;
             display: flex;
             align-items: center;
         }
-        
+
         .features-list li:before {
             content: "✓";
-            color: #00b09b;
+            color: var(--secondary-color);
             font-weight: bold;
             margin-right: 10px;
         }
-        
+
         .cta-button {
             display: inline-block;
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
             padding: 12px 30px;
             border-radius: 30px;
@@ -327,47 +339,47 @@
             margin-top: 20px;
             transition: transform 0.3s, box-shadow 0.3s;
         }
-        
+
         .cta-button:hover {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
-        
+
         footer {
-            background: rgba(0, 0, 0, 0.8);
+            background: var(--dark-color);
             color: white;
             text-align: center;
             padding: 30px 0;
             margin-top: 50px;
         }
-        
+
         .footer-content {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
         }
-        
+
         .footer-links {
             display: flex;
             justify-content: center;
             list-style: none;
             margin: 20px 0;
         }
-        
+
         .footer-links li {
             margin: 0 15px;
         }
-        
+
         .footer-links a {
             color: white;
             text-decoration: none;
             transition: color 0.3s;
         }
-        
+
         .footer-links a:hover {
-            color: #ffa726;
+            color: var(--accent-color);
         }
-        
+
         @media (max-width: 768px) {
             .games-grid {
                 grid-template-columns: 1fr;
@@ -379,7 +391,7 @@
             
             .navbar {
                 flex-direction: column;
-                padding: 15px;
+                padding: 1rem;
             }
             
             .navbar-left {
@@ -418,7 +430,7 @@
     <!-- Navbar -->
     <nav class="navbar">
         <div class="navbar-left">
-            <a href="index.html" class="logo">World of Games</a>
+            <a href="index.html" class="logo">World of Games and Data</a>
             <ul class="nav-links">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="introduction.html" class="active">Introduction</a></li>
@@ -444,7 +456,7 @@
 
     <div class="introduction-container">
         <div class="page-header">
-            <h1>Game Collection Introduction</h1>
+            <h1>Game & Data Collection Introduction</h1>
             <p>Explore four unique games, each with distinctive gameplay mechanics and features. From classic arcade experiences to innovative interactive applications.</p>
         </div>
         
@@ -472,7 +484,7 @@
                     
                     <p>The analytics system provides deep insights into player performance, helping identify patterns, strengths, and areas for improvement. All data is visually presented through interactive charts and comprehensive statistics.</p>
                     
-                    <a href="analytics/analysis_plane.html" class="cta-button">View Plane Analytics</a>
+                    <a href="analytics/analysis_plane.html" class="cta-button">View Plane Analytics Dashboard</a>
                 </div>
                 
                 <div class="analytics-image">
@@ -505,6 +517,64 @@
             </div>
         </div>
         
+                <!-- Quarto Business Analytics Section -->
+        <div class="analytics-section">
+            <div class="analytics-header">
+                <h2>Analytics Report From Flappy Plane</h2>
+                <p>From raw data to predictive insights with statistical bootstrapping</p>
+            </div>
+            
+            <div class="analytics-content">
+                <div class="analytics-features">
+                    <h3>Advanced BA/ML Methodology:</h3>
+                    <ul class="features-list">
+                <li><strong>Data Bootstrapping:</strong>&nbsp;&nbsp;150 samples → 10,000+ augmented dataset</li>
+                <li><strong>Holdout Test Set:</strong>&nbsp;&nbsp;50 samples for model validation</li>
+                <li><strong>Machine Learning:</strong>&nbsp;&nbsp;Logistic Regression, Random Forest, K-means</li>
+                <li><strong>Predictive Modeling:</strong>&nbsp;&nbsp;Survival prediction & score forecasting</li>
+                <li><strong>Player Segmentation:</strong>&nbsp;&nbsp;Behavioral clustering analysis</li>
+                <li><strong>Statistical Analysis:</strong>&nbsp;&nbsp;Correlation & distribution insights</li>
+                <li><strong>Business Insights:</strong>&nbsp;&nbsp;Actionable recommendations</li>
+                <li><strong>Reproducible Research:</strong>&nbsp;&nbsp;R + Quarto workflow</li>
+
+                    </ul>
+                    
+                    <p>Our business analytics pipeline transforms raw game data into strategic insights through statistical bootstrapping and machine learning, enabling data-driven decision making and player behavior understanding.</p>
+                    
+                    <a href="quarto_analysis/game_analytics.html" class="cta-button">View Report</a>
+                </div>
+                
+                <div class="analytics-image">
+                    <!-- Quarto Analytics Instruction -->
+                    <div class="live-server-instruction" style="background: linear-gradient(135deg, #8E2DE2, #4A00E0);">
+                        <h3><i class="fas fa-chart-line"></i> Business Analytics Dashboard</h3>
+                        <p>Interactive analytics with machine learning insights:</p>
+                        
+                        <div class="code-block">
+                            <code># Methodology Overview</code>
+                            <code>Original Data: 200 game sessions</code>
+                            <code>Training Set: 150 sessions → Bootstrap</code>
+                            <code>Test Set: 50 sessions (holdout)</code>
+                            <code>Augmented Data: 10,000+ sessions</code>
+                            <code>ML Models: Logistic, RF, K-means</code>
+                        </div>
+                        
+                        <p><strong>Features:</strong> EDA, Predictive Modeling, Player Segmentation</p>
+                        
+                        <div class="server-status">
+                            <div class="status-indicator running"></div>
+                            <span id="quartoStatusText">Static Analysis - Always Available</span>
+                        </div>
+                        
+                        <p style="margin-top: 15px; font-size: 0.9rem; opacity: 0.9;">
+                            <i class="fas fa-info-circle"></i> 
+                            No server required - Pure R/Quarto analysis
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Games Grid -->
         <div class="games-grid">
             <!-- Snake Game Card -->
