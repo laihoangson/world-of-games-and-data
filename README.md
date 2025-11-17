@@ -43,6 +43,21 @@ python analytics_plane.py
 
 3. The server will start on http://localhost:5000
 
-4. Open analytics/analysis_plane.html in your browser to view the live dashboard
+4. Open analytics/analysis_plane.html in your browser to view the live dashboard  
 
+## 📊 Data Analysis Report "Game Analytics: From Bootstrapping to Predictive Modeling"
+
+### 🔍 Key Analysis Features:
+
+**📈 Exploratory Data Analysis (EDA)**
+- Score and gameplay duration distributions
+- Death reason analysis and patterns
+- Correlation between game metrics
+- Player performance visualization
+
+**🤖 Predictive Modeling**
+- **Survival Prediction**: Machine learning model to predict player survival beyond 10 seconds
+- **Score Forecasting**: Regression models to forecast player scores based on gameplay behavior
+- **Player Segmentation**: Clustering analysis to identify distinct player skill groups
+- **Random Forest algorithms** for accurate predictions
 
