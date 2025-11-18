@@ -18,7 +18,7 @@ Dual application featuring a functional web piano and an endless runner cat game
 ### 🧱 Neon Brick Breaker
 Arcade brick breaker with power-ups, multiple levels, and neon visual effects.
 
-## Real-time Analytics System
+## Advanced Analytics System with Interactive Dashboard
 
 The Flappy Plane game includes an advanced analytics system that tracks:
 - Player performance metrics
