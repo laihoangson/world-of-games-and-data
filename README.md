@@ -4,7 +4,7 @@
 
 The URL for the website is [https://laihoangson.github.io/world-of-games/](https://laihoangson.github.io/world-of-games/)
 
-## Games Collection
+## PC Games Collection
 
 ### 🐍 Neon Snake
 Classic snake game with modern neon aesthetics, power-ups, and dynamic obstacles.
