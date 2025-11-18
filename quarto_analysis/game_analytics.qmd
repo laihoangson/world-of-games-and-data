@@ -94,44 +94,90 @@ game_data_clean <- game_data %>%
     game_duration = ifelse(is.na(game_duration), 0, game_duration),
     # Create performance metrics
     score_per_second = ifelse(game_duration > 0, score / game_duration, 0),
-    coins_per_pipe = ifelse(pipes_passed > 0, coins_collected / pipes_passed, 0),
     accuracy = ifelse(bullets_fired > 0, ufos_shot / bullets_fired, 0)
   ) %>%
-  filter(!is.na(start_time))  # Remove incomplete records
+  filter(!is.na(start_time))  
+```
 
+```{r}
 # Display basic information
 cat("Dataset Dimensions:", dim(game_data_clean), "\n")
 cat("Date Range:", as.character(min(game_data_clean$start_time)), "to", 
     as.character(max(game_data_clean$start_time)), "\n")
+```
 
-# Summary statistics
-summary_stats <- game_data_clean %>%
-  select(score, game_duration, coins_collected, ufos_shot, bullets_fired, pipes_passed) %>%
-  summary()
+```{r}
+library(gt)
+library(dplyr)
 
-# Display table
-game_data_display <- game_data_clean %>%
-  mutate(across(where(is.numeric), ~ round(., 2)))
+variable_description <- tibble(
+  Variable = c(
+    "id",
+    "start_time",
+    "end_time",
+    "score",
+    "coins_collected",
+    "ufos_shot",
+    "bullets_fired",
+    "death_reason",
+    "game_duration",
+    "pipes_passed",
+    "score_per_second",
+    "accuracy"
+  ),
+  Description = c(
+    "Unique session identifier",
+    "Timestamp when the game session started",
+    "Timestamp when the game session ended",
+    "Final score achieved in the session",
+    "Number of coins collected by the player",
+    "Number of UFO enemies shot",
+    "Total number of bullets fired",
+    "Cause of death (collision type / hazard)",
+    "Total session duration in seconds",
+    "Number of pipes the player successfully passed",
+    "Score normalized by session duration (score ÷ seconds)",
+    "Shooting accuracy (ufos_shot ÷ bullets_fired)"
+  ),
+  Type = c(
+    "Character",
+    "Datetime",
+    "Datetime",
+    "Integer",
+    "Integer",
+    "Integer",
+    "Integer",
+    "Categorical",
+    "Numeric",
+    "Integer",
+    "Numeric",
+    "Numeric"
+  )
+)
 
-game_data_display %>%
-  head(10) %>%
+variable_description %>%
   gt() %>%
   tab_header(
-    title = "Game Session Data — Preview (10 rows)"
+    title = md("**Variable Description - Plane Game Analytics**")
   ) %>%
-  opt_table_font(
-    font = google_font("Roboto")
+  cols_width(
+    Variable ~ px(160),
+    Description ~ px(420),
+    Type ~ px(120)
   ) %>%
-  cols_align(
-    align = "center",
-    columns = everything()
-  ) %>%
-  tab_options(
-    table.width = pct(100),
-    column_labels.padding = px(6),
-    data_row.padding = px(6),
-    table.font.size = px(14)
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
   )
+
+```
+
+```{r}
+# Summary statistics
+game_data_clean %>%
+  select(score, game_duration, coins_collected, ufos_shot, bullets_fired, pipes_passed, accuracy) %>%
+  summary() %>%
+  kable(caption = "Summary statistics")
 ```
 
 # 2. Exploratory Data Analysis
