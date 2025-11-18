@@ -173,6 +173,17 @@ variable_description %>%
 ```
 
 ```{r}
+# Check NA
+na_table <- game_data_clean %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(cols = everything(), names_to = "Column", values_to = "NA Count") %>%
+  arrange(desc(`NA Count`))
+
+# Display by kable
+kable(na_table, caption = "Number of NA values per column in game_data_clean")
+```
+
+```{r}
 # Summary statistics
 game_data_clean %>%
   select(score, game_duration, coins_collected, ufos_shot, bullets_fired, pipes_passed, accuracy) %>%
@@ -224,8 +235,8 @@ game_data_clean %>%
   filter(!is.na(death_reason)) %>%
   count(death_reason, sort = TRUE) %>%
   mutate(death_reason = reorder(death_reason, n)) %>%
-  ggplot(aes(x = death_reason, y = n, fill = death_reason)) +
-  geom_col(show.legend = FALSE) +
+  ggplot(aes(x = death_reason, y = n)) +
+  geom_col(fill = "steelblue") +
   coord_flip() +
   labs(title = "Common Causes of Death", x = "Death Reason", y = "Frequency") +
   theme_minimal()
