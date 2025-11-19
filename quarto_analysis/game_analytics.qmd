@@ -78,7 +78,7 @@ conflicts_prefer(plotly::layout)
 set.seed(123)
 ```
 
-# 1. Data Overview & Preprocessing
+## 1. Data Overview & Preprocessing
 
 ```{r}
 # Load and clean the data
@@ -101,7 +101,7 @@ game_data_clean <- game_data %>%
 
 ```{r}
 # Display basic information
-cat("Dataset Dimensions:", dim(game_data_clean), "\n")
+cat("Cleaned Dataset Dimensions:", dim(game_data_clean), "\n")
 cat("Date Range:", as.character(min(game_data_clean$start_time)), "to", 
     as.character(max(game_data_clean$start_time)), "\n")
 ```
@@ -191,11 +191,11 @@ game_data_clean %>%
   kable(caption = "Summary statistics")
 ```
 
-# 2. Exploratory Data Analysis
+## 2. Exploratory Data Analysis
 
 In this section, I analyze the distribution of key metrics and investigate relationships between variables to understand player behavior before modeling.
 
-## 2.1 Distribution of Key Metrics
+### 2.1 Distribution of Key Metrics
 
 ```{r}
 #| label: eda-distributions
@@ -221,7 +221,7 @@ p2 <- ggplot(game_data_clean, aes(x = game_duration)) +
 grid.arrange(p1, p2, ncol = 2)
 ```
 
-## 2.2 Death Reason Analysis
+### 2.2 Death Reason Analysis
 
 Understanding why players fail is crucial for adjusting game difficulty.
 
@@ -242,7 +242,7 @@ game_data_clean %>%
   theme_minimal()
 ```
 
-## 2.3 Correlation Matrix
+### 2.3 Correlation Matrix
 
 We check for correlations between numeric variables to identify potential predictors.
 
@@ -264,7 +264,7 @@ corrplot(cor_matrix, method = "color", type = "upper",
          title = "Feature Correlation Matrix", mar = c(0,0,1,0))
 ```
 
-# 3. Bootstrapping Data for Machine Learning
+## 3. Bootstrapping Data for Machine Learning
 
 Since the original dataset is small (~300 rows), we will bootstrap the training set to create a larger dataset (10,000+ samples) for robust model training. We reserve the last 50 records as a strict holdout test set.
 
@@ -292,7 +292,7 @@ cat("Bootstrapped Train Size:", nrow(train_bootstrapped), "\n")
 cat("Holdout Test Size:", nrow(test_holdout), "\n")
 ```
 
-# 4. Player Segmentation (Clustering)
+## 4. Player Segmentation (Clustering)
 
 We use K-Means clustering to identify distinct player personas based on their performance metrics.
 
@@ -338,9 +338,9 @@ train_bootstrapped %>%
   tab_header(title = "Cluster Profiles")
 ```
 
-# 5. Predictive Modeling
+## 5. Predictive Modeling
 
-## 5.1 Score Forecasting (Regression)
+### 5.1 Score Forecasting (Regression)
 
 We use a Random Forest model to predict the final score based on gameplay metrics.
 
@@ -377,7 +377,7 @@ cat("R-Squared:", round(r2_val, 4), "\n")
 varImpPlot(rf_model_score, main = "Feature Importance for Score Prediction")
 ```
 
-## 5.2 Survival Analysis (Logistic Regression)
+### 5.2 Survival Analysis (Logistic Regression)
 
 We predict whether a player will survive past a specific "expert" threshold (e.g., 30 seconds). This is a binary classification problem.
 
@@ -410,17 +410,17 @@ cat("Logistic Regression Accuracy:", round(conf_matrix$overall['Accuracy'], 4), 
 print(conf_matrix$table)
 ```
 
-# 6. Business Insights & Recommendations
+## 6. Business Insights & Recommendations
 
 Based on the analysis above, we derive the following actionable insights:
 
-## 6.1. Difficulty Balancing:
+### 6.1. Difficulty Balancing:
 
 Observation: The death_reason analysis highlights the most common obstacles (e.g., pipes vs. enemies). If 'pipe' collisions are disproportionately high early in the game, the initial difficulty curve may be too steep.
 
 Recommendation: Adjust the gap size or spawn rate of the leading cause of death in the first 10 seconds of gameplay to improve retention.
 
-## 6.2. Player Segmentation Strategy:
+### 6.2. Player Segmentation Strategy:
 
 Observation: K-Means clustering identified distinct groups. (Refer to cluster table: e.g., High-duration/low-coin collectors vs. Aggressive shooters).
 
@@ -430,13 +430,13 @@ Recommendation: Introduce targeted rewards.
 
 - For 'Shooters' (High bullets/UFOs): Offer weapon skins or visual upgrades for combat milestones.
 
-## 6.3. Predictive Engagement:
+### 6.3. Predictive Engagement:
 
 Observation: The Random Forest model shows that specific actions (like coins_collected or ufos_shot) are strong predictors of high scores.
 
 Recommendation: Create a tutorial or "Daily Mission" focusing on these high-value actions to teach new players how to achieve higher scores effectively.
 
-## 6.4. Monetization Opportunities:
+### 6.4. Monetization Opportunities:
 
 Observation: Players who survive past the 30-second threshold (analyzed in the Logistic Regression) show higher engagement.
 
