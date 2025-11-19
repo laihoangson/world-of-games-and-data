@@ -129,7 +129,7 @@ variable_description <- tibble(
     "Unique session identifier",
     "Timestamp when the game session started",
     "Timestamp when the game session ended",
-    "Final score achieved in the session",
+    "Final score achieved in the session. Score = coins + (3 × ufos_shot)",
     "Number of coins collected by the player",
     "Number of UFO enemies shot",
     "Total number of bullets fired",
