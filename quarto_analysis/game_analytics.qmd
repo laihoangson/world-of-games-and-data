@@ -107,6 +107,10 @@ cat("Date Range:", as.character(min(game_data_clean$start_time)), "to",
 ```
 
 ```{r}
+head(game_data_clean)
+```
+
+```{r}
 library(gt)
 library(dplyr)
 
@@ -129,14 +133,14 @@ variable_description <- tibble(
     "Unique session identifier",
     "Timestamp when the game session started",
     "Timestamp when the game session ended",
-    "Final score achieved in the session. Score = coins + (3 × ufos_shot)",
+    "Final score achieved in the session. Score = coins_collected + (3 × ufos_shot)",
     "Number of coins collected by the player",
     "Number of UFO enemies shot",
     "Total number of bullets fired",
     "Cause of death (collision type / hazard)",
     "Total session duration in seconds",
     "Number of pipes the player successfully passed",
-    "Score normalized by session duration (score ÷ seconds)",
+    "Score normalized by session duration (score ÷ game_duration)",
     "Shooting accuracy (ufos_shot ÷ bullets_fired)"
   ),
   Type = c(
