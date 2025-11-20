@@ -76,6 +76,24 @@ conflicts_prefer(ggplot2::margin)
 set.seed(123)
 ```
 
+## Introduction
+
+The modern gaming landscape is fiercely competitive, where player retention and engagement are the ultimate currencies. Success is no longer solely determined by creative design and immersive gameplay but increasingly by the ability to understand and adapt to player behavior. This project, "Game Analytics: From Exploratory Data Analysis to Predictive Modeling," demonstrates this data-driven paradigm by conducting a comprehensive analysis of Flappy Plane Adventure, a dynamic side-scrolling shooter.
+
+Leveraging a rich dataset of 300 game sessions, this study moves beyond traditional descriptive statistics to uncover the deep-seated patterns that govern player success and failure. My journey begins with a thorough Exploratory Data Analysis (EDA), where I visualize performance distributions, identify the most common obstacles, and engineer advanced behavioral features such as aggressiveness, efficiency, and risk-taking to quantify playstyles.
+
+I then tackle the challenge of a limited dataset through bootstrapping, artificially expanding my training data to build more robust and generalizable machine learning models. This foundation allows me to segment the player base into distinct behavioral profiles using unsupervised learning (K-Means Clustering), revealing clear archetypes from hesitant Beginners to seasoned Experts.
+
+The core of this investigation lies in supervised predictive modeling. I develop and compare multiple algorithms to:
+
+- Predict final scores with near-perfect accuracy using a Random Forest regressor.
+
+- Forecast player survival beyond a critical 30-second threshold.
+
+- Anticipate the cause of a player's death through a multiclass classification model.
+
+Ultimately, this report transcends a mere technical exercise. Each model and visualization is meticulously interpreted to generate actionable, evidence-based recommendations for game balancing, targeted player engagement, and strategic monetization. My goal is to provide a clear blueprint for how data science can be practically applied to create a more enjoyable, balanced, and commercially successful gaming experience.
+
 ## 1. Data Overview & Processing
 
 The data preparation stage begins by loading the raw game session CSV and converting timestamp strings into POSIX datetime objects for `start_time` and `end_time.` Missing or problematic values are handled (for example `game_duration` is set to 0 where missing), and several derived metrics are computed: `score_per_second` (score divided by duration) and `accuracy` (UFOs shot divided by bullets fired). 
