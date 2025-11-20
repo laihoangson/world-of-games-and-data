@@ -39,10 +39,10 @@ h1 {
 }
 
 h2 {
-  font-size: 2rem;
-  color: #006DAE; /* Giống màu h1 */
+  font-size: 1.65rem;
+  color: #006DAE;
   margin-top: 2.5rem;
-  margin-bottom: 2rem; /* Giống h1 */
+  margin-bottom: 2rem;
   border-bottom: 2px solid #0284C7; /* Gạch chân dưới */
   padding-bottom: 0.5rem; /* Giống h1 */
   border-left: none; /* Bỏ border trái */
@@ -50,14 +50,14 @@ h2 {
 }
 
 h3 {
-  font-size: 1.75rem;
+  font-size: 1.35rem;
   color: #006DAE;
   margin-top: 2.5rem;
   padding-left: 0.1rem;
 }
 
 h4 {
-  font-size: 1.5rem;
+  font-size: 1rem;
   color: #03A9F4;
 }
 
@@ -97,9 +97,10 @@ pre, code {
 }
 
 pre {
-  padding: 1.5rem;
-  margin: 1.5rem 0;
+  padding: 0.8rem;
+  margin: 0.8rem 0;
   overflow-x: auto;
+  font-size: 0.8rem;
   border-left: 4px solid #027EB6;
   background-color: #f1f8ff;
 }
@@ -113,7 +114,7 @@ code {
 /* Blockquotes */
 blockquote {
   padding: 1rem 1.5rem;
-  margin: 1.5rem 0;
+  margin: 1rem 0;
   background-color: #f8f9fa;
   font-style: italic;
   color: #555;

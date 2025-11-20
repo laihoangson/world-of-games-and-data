@@ -49,7 +49,7 @@ Go to analytics/ folder and run analytics_plane.py in VSCode to open server
 
 5. Open analytics/analysis_plane.html in your browser to view the live dashboard  
 
-## Data Analysis Report "Game Analytics: From Bootstrapping to Predictive Modeling"
+## Data Analysis Report "Game Analytics: From Exploratory Data Analysis to Predictive Modeling"
 
 ### 🔍 Key Analysis Features:
 
