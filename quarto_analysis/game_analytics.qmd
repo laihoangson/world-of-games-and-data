@@ -63,6 +63,8 @@ library(highcharter)
 library(htmltools)
 library(jsonlite)
 library(ggrepel)
+library(xgboost)
+library(pROC)
 
 conflicts_prefer(dplyr::filter)
 conflicts_prefer(dplyr::select)
@@ -75,6 +77,8 @@ set.seed(123)
 ```
 
 ## 1. Data Overview & Processing
+
+The data preparation stage begins by loading the raw game session CSV and converting timestamp strings into POSIX datetime objects for `start_time` and `end_time.` Missing or problematic values are handled (for example `game_duration` is set to 0 where missing), and several derived metrics are computed: `score_per_second` (score divided by duration) and `accuracy` (UFOs shot divided by bullets fired). 
 
 ```{r}
 # Load and clean the data
@@ -772,74 +776,185 @@ cluster_profiles %>% kable()
 
 ## 5. Predictive Modeling (Supervised Learning)
 
-### 5.1 Score Forecasting (Regression)
-
-We use a Random Forest model to predict the final score based on gameplay metrics.
+### 5.1 Score Regression
 
 ```{r}
-#| label: model-score-rf
-#| message: false
-
-library(randomForest)
-library(caret)
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "Enhanced Feature Importance for Score Prediction"
+#| label: fig-5-1
 
 # Define features
-features <- c("coins_collected", "ufos_shot", "bullets_fired", "game_duration", "pipes_passed")
+features_enhanced <- c("coins_collected", "ufos_shot", "bullets_fired", 
+                      "game_duration", "pipes_passed", "aggressiveness",
+                      "efficiency", "accuracy", "risk_taking")
 
-# Train Random Forest on Bootstrapped Data
-rf_model_score <- randomForest(
-  as.formula(paste("score ~", paste(features, collapse = "+"))),
-  data = train_bootstrapped,
-  ntree = 100,
-  importance = TRUE
+# Random Forest with enhanced features
+rf_enhanced <- randomForest(
+    as.formula(paste("score ~", paste(features_enhanced, collapse = "+"))),
+    data = train_bootstrapped,
+    ntree = 100,
+    importance = TRUE
 )
 
-# Predict on Holdout Test Set
-predictions_rf <- predict(rf_model_score, newdata = test_holdout)
+# Predict and assess
+predictions_rf_enhanced <- predict(rf_enhanced, newdata = test_holdout)
+rmse_enhanced <- RMSE(predictions_rf_enhanced, test_holdout$score)
+r2_enhanced <- R2(predictions_rf_enhanced, test_holdout$score)
 
-# Evaluate Performance (RMSE & R-squared)
-rmse_val <- RMSE(predictions_rf, test_holdout$score)
-r2_val <- R2(predictions_rf, test_holdout$score)
+cat("Enhanced Random Forest Performance:\n")
+cat("RMSE:", round(rmse_enhanced, 2), "\n")
+cat("R-Squared:", round(r2_enhanced, 4), "\n")
 
-cat("Random Forest Performance on Holdout Set:\n")
-cat("RMSE:", round(rmse_val, 2), "\n")
-cat("R-Squared:", round(r2_val, 4), "\n")
-
-# Variable Importance Plot
-varImpPlot(rf_model_score, main = "Feature Importance for Score Prediction")
+# Variable importance
+varImpPlot(rf_enhanced, main = "Enhanced Feature Importance for Score Prediction")
 ```
 
-### 5.2 Survival Analysis (Logistic Regression)
-
-We predict whether a player will survive past a specific "expert" threshold (e.g., 30 seconds). This is a binary classification problem.
+### 5.2 Survival Prediction
 
 ```{r}
-#| label: model-survival-logistic
-
-# Define 'Survival' as lasting longer than 30 seconds
 threshold <- 30
+train_bootstrapped <- train_bootstrapped %>%  
+    mutate(survived_expert = as.factor(ifelse(game_duration > threshold, 1, 0)))
 
-train_bootstrapped <- train_bootstrapped %>%
-  mutate(survived_expert = as.factor(ifelse(game_duration > threshold, 1, 0)))
+test_holdout <- test_holdout %>%  
+    mutate(survived_expert = as.factor(ifelse(game_duration > threshold, 1, 0)))
+```
 
-test_holdout <- test_holdout %>%
-  mutate(survived_expert = as.factor(ifelse(game_duration > threshold, 1, 0)))
+**Random Forest Classifier**
 
-# Train Logistic Regression
-# We remove variables that directly calculate duration/score to prevent data leakage, focusing on behavioral counts
-log_model <- glm(survived_expert ~ bullets_fired + ufos_shot + coins_collected, 
-                 data = train_bootstrapped, 
-                 family = "binomial")
+```{r}
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "Random Forest - Survival Prediction Feature Importance"
+#| label: fig-5-2-1
 
-# Predict probabilities on Test Set
-probs_survival <- predict(log_model, newdata = test_holdout, type = "response")
-preds_survival <- ifelse(probs_survival > 0.5, 1, 0)
+# Random Forest for Survival Prediction
+rf_survival_model <- randomForest(
+    survived_expert ~ bullets_fired + ufos_shot + coins_collected + 
+                     aggressiveness + efficiency + accuracy + pipe_pass_rate,
+    data = train_bootstrapped,
+    ntree = 200,
+    mtry = 3,
+    importance = TRUE
+)
 
-# Confusion Matrix
-conf_matrix <- confusionMatrix(as.factor(preds_survival), test_holdout$survived_expert)
+# Predictions
+rf_predictions <- predict(rf_survival_model, newdata = test_holdout)
+rf_probabilities <- predict(rf_survival_model, newdata = test_holdout, type = "prob")[,2]
 
-cat("Logistic Regression Accuracy:", round(conf_matrix$overall['Accuracy'], 4), "\n")
-print(conf_matrix$table)
+# Evaluation
+rf_conf_matrix <- confusionMatrix(rf_predictions, test_holdout$survived_expert)
+cat("Random Forest Accuracy:", round(rf_conf_matrix$overall['Accuracy'], 4), "\n")
+
+# Feature Importance
+varImpPlot(rf_survival_model, main = "Random Forest - Survival Prediction Feature Importance")
+```
+
+**XGBoost Classifier**
+
+```{r}
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "XGBoost Feature Importance"
+#| label: fig-5-2-2
+
+# XGBoost for Survival Prediction
+# Prepare data for XGBoost
+xgb_features <- c("bullets_fired", "ufos_shot", "coins_collected", 
+                  "aggressiveness", "efficiency", "accuracy", "pipe_pass_rate")
+
+xgb_train <- as.matrix(train_bootstrapped[xgb_features])
+xgb_test <- as.matrix(test_holdout[xgb_features])
+xgb_labels_train <- as.numeric(as.character(train_bootstrapped$survived_expert))
+xgb_labels_test <- as.numeric(as.character(test_holdout$survived_expert))
+
+# XGBoost model
+xgb_model <- xgboost(
+    data = xgb_train,
+    label = xgb_labels_train,
+    nrounds = 100,
+    objective = "binary:logistic",
+    eval_metric = "logloss",
+    max_depth = 6,
+    eta = 0.1,
+    verbose = 0
+)
+
+# Predictions
+xgb_probabilities <- predict(xgb_model, xgb_test)
+xgb_predictions <- ifelse(xgb_probabilities > 0.5, 1, 0)
+
+# Evaluation
+xgb_conf_matrix <- confusionMatrix(as.factor(xgb_predictions), as.factor(xgb_labels_test))
+cat("XGBoost Accuracy:", round(xgb_conf_matrix$overall['Accuracy'], 4), "\n")
+
+# Feature Importance
+xgb_importance <- xgb.importance(feature_names = xgb_features, model = xgb_model)
+xgb.plot.importance(xgb_importance, main = "XGBoost Feature Importance")
+```
+
+### 5.3 Death Reason Prediction (Multiclass Classification)
+
+```{r}
+# DEATH REASON PREDICTION 
+
+# 1. Data Preparation
+death_features <- c("score", "game_duration", "coins_collected", "ufos_shot", 
+                   "bullets_fired", "pipes_passed", "aggressiveness", "accuracy")
+
+train_data <- train_bootstrapped %>%
+  filter(!is.na(death_reason)) %>%
+  select(all_of(death_features), death_reason)
+
+test_data <- test_holdout %>%
+  filter(!is.na(death_reason)) %>%
+  select(all_of(death_features), death_reason)
+
+# 2. Train XGBoost Model
+x_train <- as.matrix(train_data[death_features])
+y_train <- as.integer(train_data$death_reason) - 1
+x_test <- as.matrix(test_data[death_features])
+y_test <- as.integer(test_data$death_reason) - 1
+
+num_classes <- length(unique(y_train))
+
+xgb_model <- xgboost(
+  data = x_train,
+  label = y_train,
+  nrounds = 100,
+  objective = "multi:softprob",
+  num_class = num_classes,
+  eval_metric = "mlogloss",
+  max_depth = 6,
+  eta = 0.1,
+  verbose = 0
+)
+
+# 3. Predictions & Evaluation
+predictions_prob <- predict(xgb_model, x_test, reshape = TRUE)
+predicted_classes <- apply(predictions_prob, 1, which.max) - 1
+
+accuracy <- mean(predicted_classes == y_test)
+cat("Death Reason Prediction Accuracy:", round(accuracy, 4), "\n")
+
+# 4. Detailed Analysis
+class_names <- levels(train_data$death_reason)
+predicted_factor <- factor(predicted_classes, levels = 0:(num_classes-1), labels = class_names)
+actual_factor <- factor(y_test, levels = 0:(num_classes-1), labels = class_names)
+
+conf_matrix <- confusionMatrix(predicted_factor, actual_factor)
+print(conf_matrix)
+
+# 5. Feature Importance & Insights
+importance <- xgb.importance(feature_names = death_features, model = xgb_model)
+print("Top Predictors:")
+print(importance)
+
+# Per-class accuracy
+class_acc <- diag(conf_matrix$table) / colSums(conf_matrix$table)
+cat("\nPer-Class Accuracy:\n")
+print(round(class_acc, 3))
 ```
 
 ## 6. Business Insights & Recommendations
