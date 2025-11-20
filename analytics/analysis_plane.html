@@ -286,23 +286,108 @@
             unknown: '#95a5a6'
         };
 
-        // THÊM: Function để load từ JSON file (fallback)
-        async function loadFromJSON() {
+        // THÊM: Function để load từ CSV file (fallback)
+        async function loadFromCSV() {
             try {
-                const response = await fetch('./data/stats.json');
+                const response = await fetch('../csv_export/game_sessions.csv');
                 if (!response.ok) {
-                    throw new Error('JSON file not found');
+                    throw new Error('CSV file not found');
                 }
-                const data = await response.json();
+                const csvText = await response.text();
+                const data = parseCSVData(csvText);
                 
                 updateDashboard(data);
-                updateConnectionStatus('json', '✅ Loaded from local data file');
-                console.log('✅ Loaded data from JSON file');
+                updateConnectionStatus('csv', '❌ Loaded from CSV file (csv_export/game_sessions.csv). To see the live data, please run the Python server');
+                console.log('✅ Loaded data from CSV file');
                 
             } catch (error) {
-                console.log('❌ Cannot load from JSON, using sample data');
+                console.log('❌ Cannot load from CSV, using sample data');
                 loadSampleData();
             }
+        }
+
+        // SỬA: Function để parse CSV data - FIXED COLUMN MAPPING
+        function parseCSVData(csvText) {
+            const lines = csvText.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            const games = [];
+            const deathReasons = {};
+            const scoreDistribution = {};
+            
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                const game = {};
+                
+                headers.forEach((header, index) => {
+                    let value = values[index];
+                    // Convert numeric values
+                    if (['score', 'coins_collected', 'ufos_shot', 'bullets_fired', 'game_duration', 'pipes_passed'].includes(header)) {
+                        value = parseInt(value) || 0;
+                    }
+                    game[header] = value;
+                });
+                
+                // Map CSV columns to expected field names
+                const mappedGame = {
+                    score: game.score || 0,
+                    coins: game.coins_collected || 0,
+                    ufos: game.ufos_shot || 0,
+                    bullets: game.bullets_fired || 0,
+                    duration: game.game_duration || 0,
+                    death_reason: game.death_reason || 'unknown',
+                    pipes_passed: game.pipes_passed || 0
+                };
+                
+                games.push(mappedGame);
+                
+                // Count death reasons
+                const rawReason = mappedGame.death_reason;
+                if (rawReason && rawReason !== 'unknown') {
+                    const reason = rawReason;
+                    deathReasons[reason] = (deathReasons[reason] || 0) + 1;
+                }
+                
+                // Create score distribution
+                const score = mappedGame.score || 0;
+                let bucket;
+
+                if (score >= 50) bucket = '50+';
+                else if (score >= 45) bucket = '45-49';
+                else if (score >= 40) bucket = '40-44';
+                else if (score >= 35) bucket = '35-39';
+                else if (score >= 30) bucket = '30-34';
+                else if (score >= 25) bucket = '25-29';
+                else if (score >= 20) bucket = '20-24';
+                else if (score >= 15) bucket = '15-19';
+                else if (score >= 10) bucket = '10-14';
+                else if (score >= 5)  bucket = '5-9';
+                else bucket = '0-4';
+                
+                scoreDistribution[bucket] = (scoreDistribution[bucket] || 0) + 1;
+            }
+            
+            // Calculate statistics
+            const totalGames = games.length;
+            const avgScore = totalGames > 0 ? Math.round(games.reduce((sum, game) => sum + (game.score || 0), 0) / totalGames) : 0;
+            const maxScore = totalGames > 0 ? Math.max(...games.map(game => game.score || 0)) : 0;
+            const avgDuration = totalGames > 0 ? Math.round(games.reduce((sum, game) => sum + (game.duration || 0), 0) / totalGames) : 0;
+            const avgBullets = totalGames > 0 ? Math.round(games.reduce((sum, game) => sum + (game.bullets || 0), 0) / totalGames) : 0;
+            
+            // Get recent games (last 10)
+            const recentGames = games.slice(-10).reverse();
+            
+            return {
+                total_games: totalGames,
+                avg_score: avgScore,
+                max_score: maxScore,
+                avg_duration: avgDuration,
+                avg_bullets: avgBullets,
+                death_reasons: deathReasons,
+                recent_games: recentGames,
+                score_distribution: scoreDistribution,
+                all_games: games
+            };
         }
 
         // THÊM: Function để load sample data
@@ -320,7 +405,7 @@
             };
             
             updateDashboard(sampleData);
-            updateConnectionStatus('error', '❌ No data available. Connect to the python server first!');
+            updateConnectionStatus('error', '❌ No data available. Connect to the python server first or ensure CSV file exists!');
         }
 
         // THÊM: Function để update connection status
@@ -349,9 +434,9 @@
                 console.log('✅ Loaded data from Flask API');
 
             } catch (error) {
-                console.log('⚠️ Cannot connect to Flask server, trying JSON file...');
-                updateConnectionStatus('warning', '⚠️ Cannot connect to server, trying local data...');
-                loadFromJSON(); // Fallback to JSON
+                console.log('⚠️ Cannot connect to Flask server, trying CSV file...');
+                updateConnectionStatus('warning', '⚠️ Cannot connect to server, trying CSV data...');
+                loadFromCSV(); // Fallback to CSV
             }
         }
 
@@ -388,84 +473,101 @@
             updateRecentGamesTable(data.recent_games || []);
         }
 
-        function createDeathReasonsChart(deathReasons) {
-            const ctx = document.getElementById('deathChart').getContext('2d');
-            
-            if (deathChart) {
-                deathChart.destroy();
-            }
+ function createDeathReasonsChart(deathReasons) {
+    const ctx = document.getElementById('deathChart').getContext('2d');
+    
+    if (deathChart) {
+        deathChart.destroy();
+    }
 
-            // Kiểm tra nếu có dữ liệu
-            if (Object.keys(deathReasons).length === 0) {
-                deathChart = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['No Data'],
-                        datasets: [{
-                            data: [1],
-                            backgroundColor: ['#95a5a6'],
-                            borderColor: 'white',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { enabled: false }
+    // Remove unknown
+    if (deathReasons['unknown']) {
+        delete deathReasons['unknown'];
+    }
+
+    // Sort entries by count descending
+    const sortedEntries = Object.entries(deathReasons)
+        .sort((a, b) => b[1] - a[1]); // b -> a = descending order
+
+    // If no data left
+    if (sortedEntries.length === 0) {
+        deathChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['No Data'],
+                datasets: [{
+                    data: [1],
+                    backgroundColor: ['#95a5a6'],
+                    borderColor: 'white',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+        return;
+    }
+
+    // Build sorted labels + data + colors
+    const labels = sortedEntries.map(([reason]) =>
+        reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    );
+
+    const data = sortedEntries.map(entry => entry[1]);
+
+    const backgroundColors = sortedEntries.map(([reason]) =>
+        chartColors[reason] || chartColors.unknown
+    );
+
+    // Create sorted doughnut chart
+    deathChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: backgroundColors,
+                borderColor: 'white',
+                borderWidth: 2,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            rotation: -90 * (Math.PI / 180), // start at top (optional)
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} (${percentage}%)`;
                         }
                     }
-                });
-                return;
-            }
-
-            const labels = Object.keys(deathReasons).map(reason => 
-                reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-            );
-            const data = Object.values(deathReasons);
-            const backgroundColors = Object.keys(deathReasons).map(reason => chartColors[reason] || chartColors.unknown);
-
-            deathChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: backgroundColors,
-                        borderColor: 'white',
-                        borderWidth: 2,
-                        hoverOffset: 10
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true,
-                                pointStyle: 'circle'
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = Math.round((value / total) * 100);
-                                    return `${label}: ${value} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    },
-                    cutout: '60%'
                 }
-            });
+            },
+            cutout: '60%'
         }
+    });
+}
+
 
         function createScoreHistogram(scoreBuckets) {
             const ctx = document.getElementById('scoreChart').getContext('2d');

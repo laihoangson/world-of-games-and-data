@@ -78,7 +78,7 @@ conflicts_prefer(plotly::layout)
 set.seed(123)
 ```
 
-## 1. Data Overview & Preprocessing
+## 1. Data Overview & Processing
 
 ```{r}
 # Load and clean the data
