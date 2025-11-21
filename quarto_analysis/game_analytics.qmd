@@ -375,7 +375,7 @@ plot_ly(
   )
 ```
 
-As presented in @fig-2-1-3, `score` is highly correlated with `game_duration`, `coins_collected`, `ufos_shot`, and `pipes_passed.` This confirms that players who survive longer tend to accumulate more points and achievements, validating the game's internal scoring logic.
+@fig-2-1-3 presents a heatmap illustrating the correlations between key performance metrics. The lighter shades of green indicate a strong positive relationship. As expected, `score` is highly correlated with its core components: `game_duration`, `coins_collected`, `ufos_shot`, and `pipes_passed.` This confirms that the game's internal scoring logic is sound - players who survive longer and engage with game elements successfully achieve higher scores. An equally important insight comes from the `accuracy` variable, which shows dark, weak correlations with nearly all other metrics. This suggests that shooting accuracy is an independent skill that is not strongly tied to how long a player survives or how many points they accumulate through other means.
 
 ### 2.2 Death Reason Deep-Dive
 
@@ -524,7 +524,13 @@ for (dr in unique_reasons) {
 )
 ```
 
-@fig-2-2-2 reveals that deaths caused by "enemy_bullet" and "ufo_collision" are associated with significantly higher median scores. This implies that players who are skilled enough to survive the initial pipes and engage with enemies tend to be higher-performing players overall. Conversely, dying by hitting the "ground" is associated with the lowest scores, often zero.
+@fig-2-2-2 provides a powerful comparison of player performance at the moment of failure, revealing a clear hierarchy of challenges. The distributions show that not all deaths are equal in terms of the skill level they represent:
+
+- Novice Failures: Dying by hitting the ground is associated with the lowest possible scores, with the distribution almost entirely concentrated at zero. This represents an immediate failure to grasp the basic flight mechanic. Similarly, ceiling collisions happen at very low scores.
+
+- Advanced Challenges: In stark contrast, deaths caused by enemy_bullet and ufo_collision are associated with significantly higher median scores. The box plots for these two categories are clearly elevated, indicating that only players who have already survived the initial obstacles and achieved a high score even encounter these threats. Dying to an enemy is a hallmark of a high-performing player pushing the limits of their skill.
+
+- The Universal Obstacle: The distribution for pipe collisions is unique. It has a low median score, confirming it's a frequent cause of failure for less experienced players. However, its long upper tail, extending to the maximum score, shows that even the most expert players are not immune, making pipes the universal challenge that affects players at all skill levels.
 
 ```{r}
 #| label: tbl-2-2-1
@@ -545,7 +551,7 @@ ev_loss <- game_data_clean %>%
 ev_loss %>% kable()
 ```
 
-@tbl-2-2-1 provides a statistical summary of the "cost" associated with each type of death. It calculates the mean and median score at the moment of failure. The key insight is that deaths from ufo_collision (mean score: 30.3) and enemy_bullet (mean score: 28.3) occur to players who have already accumulated a high score. In contrast, dying by hitting the ground (mean score: 0.8) almost exclusively happens to players with little to no score. 
+@tbl-2-2-1 provides a clear statistical summary of the skill level associated with each cause of failure. The data reveals a stark contrast between advanced threats and novice hurdles: deaths from ufo_collision (mean score: 30.3) and enemy_bullet (mean score: 28.3) happen to high-performing players, while failing by hitting the ground (mean score: 0.8, median: 0.0) is the definitive mark of a beginner. Positioned between these, pipe collisions represent the primary mid-game obstacle, being the most frequent cause of death (182 instances) with a moderate mean score of 14.5. 
 
 ### 2.3 Behavioral Feature Engineering
 
@@ -569,42 +575,45 @@ game_data_enhanced <- game_data_clean %>%
 ```
 
 ```{r}
-#| fig-height: 5
+#| fig-height: 6
+#| fig-width: 8
 #| fig-cap: "Behavioral Features Correlation Matrix"
 #| label: fig-2-3-1
 
 # Behavioral features
 behavioral_vars <- game_data_enhanced %>%
-  select(aggressiveness, efficiency, accuracy, risk_taking,
-         coin_rate, ufo_rate, pipe_pass_rate, complexity)
+  dplyr::select(
+    aggressiveness, efficiency, accuracy, risk_taking,
+    coin_rate, ufo_rate, pipe_pass_rate, complexity
+  )
 
 # Correlation matrix
 behavioral_cor <- cor(behavioral_vars, use = "complete.obs")
 
-# Heatmap Plotly 
-plot_ly(
-  x = colnames(behavioral_cor),
-  y = colnames(behavioral_cor),
-  z = behavioral_cor,
-  type = "heatmap",
-  colorscale = "RdBu",   
-  zmin = -1,
-  zmax = 1,
-  xgap = 2,
-  ygap = 2,
-  showscale = TRUE
-) %>%
-  layout(
-    title = list(text = "Behavioral Features Correlation Matrix", x = 0.5),
-    xaxis = list(title = "", tickangle = 45, tickfont = list(size = 10)),
-    yaxis = list(title = "", autorange = "reversed", tickfont = list(size = 10)),
-    plot_bgcolor = "white",
-    paper_bgcolor = "white",
-    margin = list(l = 80, r = 80, b = 80, t = 80)
-  )
+# Corrplot
+corrplot(
+  behavioral_cor,
+  method = "color",
+  col = colorRampPalette(c("red", "white", "blue"))(200),
+  type = "full",
+  addCoef.col = "black",
+  tl.col = "black",
+  tl.srt = 45,
+  number.cex = 0.7,
+  mar = c(0,0,3,0),
+  title = "Behavioral Features Correlation Matrix"
+)
 ```
 
-@fig-2-3-1 reveals fascinating player archetypes. High aggressiveness correlates moderately with efficiency, suggesting spam-shooting can be effective. However, accuracy shows weak correlations with other metrics, indicating that aiming skill operates independently from other play style elements. The complexity metric (sum of key actions) shows strong positive relationships with most performance indicators, confirming that active players generally perform better.
+@fig-2-3-1 provides a detailed look at how different player strategies relate to one another. The values and colors (deep blue for strong positive correlation, white for no correlation, red for negative correlation) reveal the core mechanics of successful play:
+
+- The "Winning" Strategy is High-Risk, High-Reward: The strongest correlations exist between efficiency, risk_taking, and ufo_rate (correlation values of 0.89 to 0.97). This is a critical insight: players who are the most efficient (highest score-per-second) are precisely those who take risks to engage UFOs. The game heavily rewards an active, combat-oriented playstyle over a passive, purely survival-focused one.
+
+- Aggressiveness is Independent of Accuracy: There is virtually no correlation (0.03) between aggressiveness (how often a player fires) and accuracy. This finding debunks the common assumption that firing more rapidly ("spraying") would lead to lower accuracy. It suggests that skilled players can maintain their accuracy even at a high rate of fire, and unskilled players are inaccurate regardless of how often they shoot. The two are independent skills.
+
+- Negligible Strategic Trade-offs: The only negative correlation on the chart is between coin_rate and aggressiveness (-0.08), which is extremely weak. This indicates there is no significant trade-off between focusing on shooting and focusing on collecting coins; skilled players appear to do both effectively.
+
+Overall, this matrix clearly demonstrates that success in the game is not just about survival, but about efficient, risk-taking engagement with enemies.
 
 ### 2.4. Session Progression Analysis
 
@@ -647,9 +656,14 @@ efficiency_plot <- ggplot(game_data_enhanced,
 ggplotly(efficiency_plot)
 ```
 
-@fig-2-4-1 reveals a strong, positive, and non-linear relationship between how long a player survives (`game_duration`) and their final score. The trendline shows that the score appears to accelerate as game duration increases. This suggests that players who survive longer become more efficient at scoring. The widening cone shape of the data points indicates that while survival is a prerequisite for a high score, among players who last a long time, there is a greater variance in scoring ability. 
+@fig-2-4-1 reveals a strong, positive, and non-linear relationship between how long a player survives (`game_duration`) and their final score. The upward curve of the trendline indicates an accelerating return: the longer a player survives, the more rapidly their score increases per second. This suggests that skilled players who survive longer are not just accumulating points over more time, but are also becoming more effective at scoring as they encounter more opportunities (UFOs, coins). Furthermore, the widening "cone" shape of the data points and the broadening confidence interval show that while survival is a necessary condition for a high score, there is a much greater variance in scoring ability among long-lasting players
 
-@fig-2-4-2 show that players in higher skill tiers (e.g., pink) consistently achieve a higher number of UFO hits for a given number of bullets fired. Their data points are positioned higher on the chart. Conversely, lower-skilled players (e.g., green, orange) are clustered at the bottom, indicating that they may be firing indiscriminately with low accuracy.
+@fig-2-4-2 provides a powerful visualization of shooting efficiency, segmented by Skill Tier. The key insight lies in the slope of the trendlines for each player group:
+
+- High-Skill Tiers (e.g., Pink: 50+ Score): The trendline for the most skilled players is extremely steep. This demonstrates a very high efficiency: a small increase in bullets fired results in a large increase in UFOs shot.
+
+- Low-Skill Tiers (e.g., Red: 0-4 Score): The trendlines for the least skilled players are nearly flat. They may fire a moderate number of bullets, but they achieve almost no successful hits. This visually separates raw activity (firing bullets) from effective outcomes (hitting targets).
+In essence, the chart proves that simply being aggressive is not enough; success is defined by the efficiency of that aggression, a trait clearly demonstrated by the higher skill tiers.
 
 ### 2.5 Clusterable Structure Check
 
