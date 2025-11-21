@@ -104,6 +104,16 @@
     text-shadow: 0 0 5px #0f0;
     opacity: 0.8;
   }
+  #powerup-info {
+    position: absolute;
+    bottom: 110px;
+    left: 20px;
+    color: #0f0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    text-shadow: 0 0 5px #0f0;
+    line-height: 1.4;
+  }
 </style>
 </head>
 <body>
@@ -116,6 +126,11 @@
   <div>WASD or Arrow Keys - Move</div>
   <div>P - Pause/Resume</div>
   <div>R - Restart</div>
+</div>
+<div id="powerup-info">
+  <div>POWER-UPS:</div>
+  <div><span style="color:#0099ff">● SLOW</span> - Reduces speed</div>
+  <div><span style="color:#ff00ff">● DOUBLE</span> - Double points</div>
 </div>
 <div id="author">Created by Hoang Son Lai</div>
 <div id="game-over">
@@ -202,7 +217,8 @@ function addPowerUp() {
         (food.x !== x || food.y !== y) &&
         !obstacles.some(o => o.x===x && o.y===y) &&
         !powerUps.some(p => p.x===x && p.y===y)) {
-      const types = ['speed', 'slow', 'double', 'shield'];
+      // Chỉ giữ lại power-up 'slow' và 'double'
+      const types = ['slow', 'double'];
       const type = types[Math.floor(Math.random() * types.length)];
       powerUps.push({x, y, type});
       break;
@@ -216,17 +232,11 @@ function activatePowerUp(type) {
   powerUpTimer = 240; // 4 seconds at 60fps (giảm từ 5 giây)
   
   switch(type) {
-    case 'speed':
-      fps = Math.min(maxFps, fps + 3); // Tăng ít hơn
-      break;
     case 'slow':
       fps = Math.max(6, fps - 2); // Giảm ít hơn
       break;
     case 'double':
       // Double points for a while
-      break;
-    case 'shield':
-      // Snake can pass through itself for a while
       break;
   }
 }
@@ -359,10 +369,8 @@ function drawPowerUps() {
   powerUps.forEach(p => {
     let color;
     switch(p.type) {
-      case 'speed': color = '#ff9900'; break;
       case 'slow': color = '#0099ff'; break;
       case 'double': color = '#ff00ff'; break;
-      case 'shield': color = '#ffff00'; break;
     }
     
     // Pulsing effect
@@ -406,13 +414,11 @@ function update() {
     return;
   }
 
-  // Check for collision with self (unless shield is active)
-  if (!powerUpActive || powerUpType !== 'shield') {
-    if (snake.some(s => s.x===newHead.x && s.y===newHead.y)) {
-      gameOver = true;
-      endGame();
-      return;
-    }
+  // Check for collision with self
+  if (snake.some(s => s.x===newHead.x && s.y===newHead.y)) {
+    gameOver = true;
+    endGame();
+    return;
   }
 
   snake.unshift(newHead);
