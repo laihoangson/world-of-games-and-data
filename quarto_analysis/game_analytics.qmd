@@ -7,7 +7,8 @@ format:
   html:
     output-file: game_analytics.html
     css: "assignment.css"
-    embed-resources: true
+    embed-resources: false
+    minify: false
     code-fold: true
     toc: true
     toc-depth: 4
@@ -1157,6 +1158,4 @@ print(round(class_acc, 3))
 
 **Business Impact:** This retains the most dedicated and valuable players, creates community buzz around high-score competitions, and extends the game's lifecycle.
 
-**Conclusion:**
-
-By implementing these above data-driven recommendations, Flappy Plane Adventure can evolve into a more balanced and engaging game that effectively nurtures players from their first tap to expert-level mastery.
+> **By implementing these above data-driven recommendations, Flappy Plane Adventure can evolve into a more balanced and engaging game that effectively nurtures players from their first tap to expert-level mastery.**
