@@ -703,13 +703,13 @@ loadings_plot
 
 @fig-2-5-2 is essential for interpreting the PCA results, as it explains the meaning behind the two principal components that summarize 87.3% of the player behavior variance. Each point represents an original variable, and its position reveals its contribution to PC1 and PC2.
 
-PC1 - "Progression & Skill" (60.8%): This interpretation remains correct. All the variables directly associated with successful outcomes—score, game_duration, pipes_passed, coins_collected, ufos_shot, and bullets_fired—have large, positive loadings on the x-axis. This means that a player's position along the horizontal axis is a direct and powerful measure of their overall skill and progression within a single game session. Moving from left to right signifies a transition from a low-performing session to a high-performing one.
+PC1 - "Progression & Skill" (60.8%): This interpretation remains correct. All the variables directly associated with successful outcomes - `score`, `game_duration`, `pipes_passed`, `coins_collected`, `ufos_shot`, and `bullets_fired` - have large, positive loadings on the x-axis. This means that a player's position along the horizontal axis is a direct and powerful measure of their overall skill and progression within a single game session. Moving from left to right signifies a transition from a low-performing session to a high-performing one.
 
 PC2 - "Playstyle: Passive Survival vs. Active Combat" (26.5%): This is where the crucial correction lies.
 
-- The variables with positive loadings (pointing upwards) are primarily the raw accumulation metrics: game_duration, coins_collected, and pipes_passed. These represent a playstyle focused on longevity and steady progress. A high score on this axis indicates a "Passive Survival" approach, where the main goal is to dodge obstacles and last as long as possible.
+- The variables with positive loadings (pointing upwards) are primarily the raw accumulation metrics: `game_duration`, `coins_collected`, and `pipes_passed.` These represent a playstyle focused on longevity and steady progress. A high score on this axis indicates a "Passive Survival" approach, where the main goal is to dodge obstacles and last as long as possible.
 
-- The variables with negative loadings (pointing downwards) are the key behavioral ratios: aggressiveness, risk_taking, efficiency, and, critically, accuracy. These metrics measure the intensity and effectiveness of a player's actions. A low score on this axis indicates an "Active Combat" or "High-Efficiency" playstyle, where the player is actively engaging with enemies, taking risks to shoot UFOs, and maximizing their score-per-second.
+- The variables with negative loadings (pointing downwards) are the key behavioral ratios: `aggressiveness`, `risk_taking`, `efficiency`, and, critically, `accuracy.` These metrics measure the intensity and effectiveness of a player's actions. A low score on this axis indicates an "Active Combat" or "High-Efficiency" playstyle, where the player is actively engaging with enemies, taking risks to shoot UFOs, and maximizing their score-per-second.
 
 ```{r}
 #| fig-height: 5
