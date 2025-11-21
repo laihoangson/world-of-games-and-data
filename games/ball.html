@@ -87,6 +87,11 @@
             color: #ffeb3b;
         }
         
+        #highScoreBox {
+            border-color: #b388ff;
+            color: #b388ff;
+        }
+        
         .controls {
             display: flex;
             gap: 25px;
@@ -249,6 +254,21 @@
             margin-bottom: 20px;
             text-shadow: 0 0 15px #00ff00;
         }
+        
+        .new-high-score {
+            color: #ffeb3b;
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ffeb3b;
+            margin: 15px 0;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -260,6 +280,7 @@
             <div class="stat-box" id="scoreBox">Score: <span id="score">0</span></div>
             <div class="stat-box" id="livesBox">Lives: <span id="lives">3</span></div>
             <div class="stat-box" id="levelBox">Level: <span id="level">1</span></div>
+            <div class="stat-box" id="highScoreBox">High Score: <span id="highScore">0</span></div>
         </div>
         
         <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -282,6 +303,7 @@
         <div class="game-over" id="gameOverScreen">
             <h2>GAME OVER</h2>
             <p>Your Score: <span id="finalScore">0</span></p>
+            <div id="newHighScoreMessage" class="new-high-score" style="display: none;">NEW HIGH SCORE! 🎉</div>
             <p id="gameOverMessage"></p>
             <button id="playAgainBtn">Play Again</button>
         </div>
@@ -307,10 +329,12 @@
         const scoreElement = document.getElementById('score');
         const livesElement = document.getElementById('lives');
         const levelElement = document.getElementById('level');
+        const highScoreElement = document.getElementById('highScore');
         const gameOverScreen = document.getElementById('gameOverScreen');
         const levelCompleteScreen = document.getElementById('levelCompleteScreen');
         const finalScoreElement = document.getElementById('finalScore');
         const gameOverMessage = document.getElementById('gameOverMessage');
+        const newHighScoreMessage = document.getElementById('newHighScoreMessage');
         const powerupIndicator = document.getElementById('powerupIndicator');
 
         // Game state variables
@@ -320,6 +344,7 @@
         let lives = 3;
         let level = 1;
         let frameCount = 0;
+        let highScore = localStorage.getItem('neonBrickBreakerHighScore') || 0;
 
         // Game objects
         const paddle = {
@@ -357,7 +382,7 @@
             offsetLeft: 25
         };
 
-        // Power-up types - ĐÃ THAY ĐỔI FASTBALL THÀNH SLOWBALL
+        // Power-up types
         const powerUpTypes = [
             { type: 'multiball', color: '#ff5252', symbol: '💥', duration: 0 },
             { type: 'widepaddle', color: '#4fc3f7', symbol: '🔄', duration: 10000 },
@@ -400,6 +425,7 @@
             gameOverScreen.style.display = 'none';
             levelCompleteScreen.style.display = 'none';
             powerupIndicator.style.display = 'none';
+            newHighScoreMessage.style.display = 'none';
             
             // Reset game state
             gameRunning = true;
@@ -612,7 +638,7 @@
                     return;
                 }
                 
-                // Apply slow ball power-up - ĐÃ THAY ĐỔI TỪ FASTBALL THÀNH SLOWBALL
+                // Apply slow ball power-up
                 const currentSpeed = activePowerUps.slowball ? ball.speed * 0.6 : ball.speed;
                 
                 ball.x += ball.dx * (currentSpeed / 5);
@@ -720,6 +746,12 @@
                 brick.visible = false;
                 score += brick.unbreakable ? 50 : 20;
                 
+                // Update high score if needed
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('neonBrickBreakerHighScore', highScore);
+                }
+                
                 // Chance to spawn power-up
                 if (Math.random() < 0.2) {
                     powerUps.push({
@@ -762,7 +794,7 @@
                     }, powerUp.duration);
                     break;
                     
-                case 'slowball': // ĐÃ THAY ĐỔI TỪ FASTBALL THÀNH SLOWBALL
+                case 'slowball':
                     activePowerUps.slowball = true;
                     setTimeout(() => {
                         if (activePowerUps.slowball) {
@@ -812,7 +844,18 @@
         function gameOver() {
             gameRunning = false;
             finalScoreElement.textContent = score;
-            gameOverMessage.textContent = "Try again to beat your score!";
+            
+            // Check for new high score
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('neonBrickBreakerHighScore', highScore);
+                newHighScoreMessage.style.display = 'block';
+                gameOverMessage.textContent = "Congratulations! New High Score!";
+            } else {
+                newHighScoreMessage.style.display = 'none';
+                gameOverMessage.textContent = "Try again to beat your high score!";
+            }
+            
             gameOverScreen.style.display = 'block';
         }
 
@@ -821,6 +864,7 @@
             scoreElement.textContent = score;
             livesElement.textContent = lives;
             levelElement.textContent = level;
+            highScoreElement.textContent = highScore;
         }
 
         // Draw game
@@ -913,6 +957,7 @@
 
         // Initialize and start game
         initGame();
+        updateUI(); // Initialize high score display
         gameLoop();
     </script>
 </body>
