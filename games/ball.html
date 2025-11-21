@@ -273,7 +273,7 @@
         <div class="instructions">
             <h3>How to Play</h3>
             <p>← → : Move Paddle | Z : Launch Ball | P : Pause Game</p>
-            <p>Collect Power-ups: 💥 (Multi-ball) | 🔄 (Wide Paddle) | 🚀 (Fast Ball) | ❤️ (Extra Life)</p>
+            <p>Collect Power-ups: 💥 (Multi-ball) | 🔄 (Wide Paddle) | 🐌 (Slow Ball) | ❤️ (Extra Life)</p>
             <p>Break all bricks to advance to the next level!</p>
         </div>
         
@@ -357,18 +357,18 @@
             offsetLeft: 25
         };
 
-        // Power-up types
+        // Power-up types - ĐÃ THAY ĐỔI FASTBALL THÀNH SLOWBALL
         const powerUpTypes = [
             { type: 'multiball', color: '#ff5252', symbol: '💥', duration: 0 },
             { type: 'widepaddle', color: '#4fc3f7', symbol: '🔄', duration: 10000 },
-            { type: 'fastball', color: '#ffeb3b', symbol: '🚀', duration: 8000 },
+            { type: 'slowball', color: '#ffeb3b', symbol: '🐌', duration: 8000 },
             { type: 'extralife', color: '#00ff00', symbol: '❤️', duration: 0 }
         ];
 
         // Active power-ups
         let activePowerUps = {
             widepaddle: false,
-            fastball: false
+            slowball: false
         };
 
         // Initialize game
@@ -391,7 +391,7 @@
             powerUps = [];
             activePowerUps = {
                 widepaddle: false,
-                fastball: false
+                slowball: false
             };
             
             createBricks();
@@ -600,7 +600,7 @@
                 paddle.x += paddle.speed;
             }
             
-            // Launch ball - ĐÃ THAY ĐỔI TỪ ' ' THÀNH 'z'
+            // Launch ball
             if (keys['z'] && !balls[0].active) {
                 balls[0].active = true;
             }
@@ -612,8 +612,8 @@
                     return;
                 }
                 
-                // Apply fast ball power-up
-                const currentSpeed = activePowerUps.fastball ? ball.speed * 1.5 : ball.speed;
+                // Apply slow ball power-up - ĐÃ THAY ĐỔI TỪ FASTBALL THÀNH SLOWBALL
+                const currentSpeed = activePowerUps.slowball ? ball.speed * 0.6 : ball.speed;
                 
                 ball.x += ball.dx * (currentSpeed / 5);
                 ball.y += ball.dy * (currentSpeed / 5);
@@ -762,11 +762,11 @@
                     }, powerUp.duration);
                     break;
                     
-                case 'fastball':
-                    activePowerUps.fastball = true;
+                case 'slowball': // ĐÃ THAY ĐỔI TỪ FASTBALL THÀNH SLOWBALL
+                    activePowerUps.slowball = true;
                     setTimeout(() => {
-                        if (activePowerUps.fastball) {
-                            activePowerUps.fastball = false;
+                        if (activePowerUps.slowball) {
+                            activePowerUps.slowball = false;
                         }
                     }, powerUp.duration);
                     break;
@@ -836,7 +836,7 @@
             drawPaddle();
             
             // Draw active power-ups indicator
-            if (activePowerUps.widepaddle || activePowerUps.fastball) {
+            if (activePowerUps.widepaddle || activePowerUps.slowball) {
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
                 ctx.font = '14px Arial';
                 ctx.textAlign = 'left';
@@ -846,8 +846,8 @@
                     ctx.fillText('Wide Paddle Active', 10, yPos);
                     yPos += 20;
                 }
-                if (activePowerUps.fastball) {
-                    ctx.fillText('Fast Ball Active', 10, yPos);
+                if (activePowerUps.slowball) {
+                    ctx.fillText('Slow Ball Active', 10, yPos);
                 }
             }
         }
