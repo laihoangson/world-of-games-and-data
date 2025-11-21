@@ -55,13 +55,22 @@ Go to analytics/ folder and run analytics_plane.py in VSCode to open server
 
 **📈 Exploratory Data Analysis (EDA)**
 - Score and gameplay duration distributions
-- Death reason analysis and patterns
+- Death reason analysis and patterns  
 - Correlation between game metrics
 - Player performance visualization
+- Behavioral feature engineering (aggressiveness, efficiency, risk-taking, etc)
 
-**🤖 Predictive Modeling**
-- **Survival Prediction**: Machine learning model to predict player survival beyond 10 seconds
-- **Score Forecasting**: Regression models to forecast player scores based on gameplay behavior
-- **Player Segmentation**: Clustering analysis to identify distinct player skill groups
-- **Random Forest algorithms** for accurate predictions
+**🤖 Machine Learning & Predictive Modeling**
+- **Data Bootstrapping**: Augmented 250 samples to 10,000+ training dataset
+- **Holdout Validation**: 50-sample test set for unbiased model evaluation
+- **Score Regression**: Random Forest model with near-perfect accuracy (R² = 0.996) for final score prediction
+- **Survival Prediction**: Binary classification to forecast player survival beyond 30-second expert threshold (98% accuracy)
+- **Death Reason Classification**: Multiclass XGBoost model predicting specific causes of player failure
+- **Player Segmentation**: K-means clustering identifying 3 distinct behavioral profiles (Novices, Average Players, Experts)
+
+**🎯 Business Intelligence**
+- Actionable recommendations for player retention and monetization
+- Game balancing insights based on player behavior patterns
+- Targeted engagement strategies for different player segments
+- Data-driven game design improvements
 
