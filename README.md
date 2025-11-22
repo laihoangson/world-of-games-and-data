@@ -18,6 +18,8 @@ Dual application featuring a functional web piano and an endless runner cat game
 ### 🧱 Neon Brick Breaker
 Arcade brick breaker with power-ups, multiple levels, and neon visual effects.
 
+See the videos to learn how to play the PC games here: https://drive.google.com/drive/folders/1MoglukpwKfDFlNKquAvJ0Esi65AaFzk0?usp=sharing
+
 ## Advanced Analytics System with Interactive Dashboard
 
 The Flappy Plane game includes an advanced analytics system that tracks:
