@@ -36,16 +36,11 @@ To enable the live analytics dashboard for Flappy Plane:
 git clone git@github.com:laihoangson/world-of-games.git
 ```
 
-2. Navigate to the analytics folder:
-```bash
-cd analytics
-```
-
-3. Run the Python analytics server:
+2. Run the Python analytics server:
 
 Go to analytics/ folder and run analytics_plane.py in VSCode to open server
 
-4. The server will start on http://localhost:5000
+3. The server will start on http://localhost:5000
 
 ## Data Analysis Report "Game Analytics: From Exploratory Data Analysis to Predictive Modeling"
 
