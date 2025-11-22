@@ -1078,7 +1078,7 @@ cat("\nPer-Class Accuracy:\n")
 print(round(class_acc, 3))
 ```
 
-*Death Reason Prediction Accuracy: 0.6:** The model achieved an overall accuracy of 60% on the holdout test set. While this demonstrates predictive capability superior to random guessing, the result must be interpreted with caution due to significant class imbalance. The dataset is heavily skewed toward "pipe" deaths (182 instances) compared to rare events like "ufo_collision" (3 instances). Consequently, the 60% accuracy metric is largely driven by the model’s ability to predict the majority class, rather than a balanced performance across all failure types. This establishes a moderate baseline but indicates that further refinement is necessary.
+**Death Reason Prediction Accuracy: 0.6:** The model achieved an overall accuracy of 60% on the holdout test set. While this demonstrates predictive capability superior to random guessing, the result must be interpreted with caution due to significant class imbalance. The dataset is heavily skewed toward "pipe" deaths (182 instances) compared to rare events like "ufo_collision" (3 instances). Consequently, the 60% accuracy metric is largely driven by the model’s ability to predict the majority class, rather than a balanced performance across all failure types. This establishes a moderate baseline but indicates that further refinement is necessary.
 
 **Confusion Matrix and Statistics:** The confusion matrix explicitly highlights the challenges posed by the imbalanced dataset. The model performs reliably on frequent failure modes, achieving 84.0% accuracy for "pipe" deaths and 66.7% for "ground" deaths. However, it exhibits a strong bias toward these majority classes, struggling significantly with nuanced, high-skill failure scenarios. For instance, it achieved only 25% accuracy for "enemy_bullet" deaths and failed to correctly classify any "ufo_collision" events (NaN accuracy). This is a classic symptom of training on imbalanced data without adjustment; to improve the detection of these minority classes, future iterations should employ techniques such as SMOTE (Synthetic Minority Over-sampling Technique) or apply Class Weights during training.
 
@@ -1088,7 +1088,7 @@ print(round(class_acc, 3))
 
 ### 6.1. Key Business Insights
 
-**Success is Driven by Aggressive Efficiency, Not Just Survival**: The most successful players are not passive. Behavioral analysis reveals that efficiency (`score per second`) is overwhelmingly driven by a high-risk, high-reward playstyle characterized by aggressive UFO engagement (`risk_taking`, `ufo_rate`). Simply dodging obstacles is a suboptimal strategy.
+**Success is Driven by Aggressive Efficiency, Not Just Survival**: The most successful players are not passive. Behavioral analysis reveals that `efficiency` (`score_per_second`) is overwhelmingly driven by a high-risk, high-reward playstyle characterized by aggressive UFO engagement (`risk_taking`, `ufo_rate`). Simply dodging obstacles is a suboptimal strategy.
 
 **Pipes are the Universal Bottleneck**: While pipes are the most common cause of death for novices, their long tail in the score distribution shows they remain a threat even to experts. This makes pipe navigation the single most critical skill gate and a constant challenge for all players.
 
@@ -1102,7 +1102,7 @@ print(round(class_acc, 3))
 
 - Experts (Cluster 1, ~10%): Highly skilled, long-surviving players who actively engage with all game systems. They are the primary source of high scores and likely the most engaged.
 
-**Survival is Best Predicted by Proactive Play**: Predictive models for survival beyond 30 seconds consistently identify `coins_collected` as the top feature, not because of the points, but because it is a proxy for skilled navigation. This is closely followed by `aggressiveness`, confirming that active players survive longer than passive ones.
+**Survival is Best Predicted by Proactive Play**: Predictive models for survival beyond 30 seconds consistently identify `coins_collected` as the top feature, not because of the points, but because it is a proxy for skilled navigation. This is closely followed by `aggressiveness` and `bullet_fired`, confirming that active players survive longer than passive ones.
 
 ### 6.2. Actionable Recommendations
 
