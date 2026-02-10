@@ -187,20 +187,6 @@
 
         let particlesArray;
 
-        // Mouse handling
-        let mouse = {
-            x: null,
-            y: null,
-            radius: (canvas.height/80) * (canvas.width/80)
-        }
-
-        window.addEventListener('mousemove', 
-            function(event) {
-                mouse.x = event.x;
-                mouse.y = event.y;
-            }
-        );
-
         // Particle class
         class Particle {
             constructor(x, y, directionX, directionY, size, color) {
@@ -220,6 +206,7 @@
             }
             // Update particle position
             update() {
+                // Kiểm tra va chạm với cạnh màn hình
                 if (this.x > canvas.width || this.x < 0) {
                     this.directionX = -this.directionX;
                 }
@@ -227,24 +214,9 @@
                     this.directionY = -this.directionY;
                 }
 
-                // Check mouse collision
-                let dx = mouse.x - this.x;
-                let dy = mouse.y - this.y;
-                let distance = Math.sqrt(dx*dx + dy*dy);
-                if (distance < mouse.radius + this.size){
-                    if (mouse.x < this.x && this.x < canvas.width - this.size * 10) {
-                        this.x += 10;
-                    }
-                    if (mouse.x > this.x && this.x > this.size * 10) {
-                        this.x -= 10;
-                    }
-                    if (mouse.y < this.y && this.y < canvas.height - this.size * 10) {
-                        this.y += 10;
-                    }
-                    if (mouse.y > this.y && this.y > this.size * 10) {
-                        this.y -= 10;
-                    }
-                }
+                // --- ĐÃ XÓA PHẦN TƯƠNG TÁC ĐẨY CỦA CHUỘT TẠI ĐÂY ---
+                // Giờ các điểm sẽ di chuyển tự nhiên mà không sợ chuột
+
                 this.x += this.directionX;
                 this.y += this.directionY;
                 this.draw();
@@ -302,18 +274,11 @@
             function(){
                 canvas.width = innerWidth;
                 canvas.height = innerHeight;
-                mouse.radius = ((canvas.height/80) * (canvas.height/80));
                 init();
             }
         );
 
-        // Run when mouse leaves screen
-        window.addEventListener('mouseout',
-            function(){
-                mouse.x = undefined;
-                mouse.y = undefined;
-            }
-        )
+        // Đã xóa phần xử lý mousemove và mouseout vì không còn cần thiết
 
         init();
         animate();
