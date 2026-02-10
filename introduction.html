@@ -6,6 +6,9 @@
     <title>Introduction - World of Games</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* =========================================
+           CORE STYLES (ORIGINAL - DO NOT TOUCH)
+           ========================================= */
         * {
             margin: 0;
             padding: 0;
@@ -27,9 +30,10 @@
             background-color: #f5f5f5;
             color: var(--text-color);
             line-height: 1.6;
+            overflow-x: hidden; /* Prevent horizontal scroll from effects */
         }
 
-        /* Navbar Styles */
+        /* Navbar Styles - STRICTLY PRESERVED */
         .navbar {
             display: flex;
             justify-content: space-between;
@@ -134,6 +138,10 @@
             text-align: center;
             margin-bottom: 50px;
             color: var(--primary-color);
+            /* Added for animation */
+            opacity: 0; 
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
         }
 
         .page-header h1 {
@@ -157,6 +165,11 @@
             padding: 30px;
             margin-bottom: 50px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            
+            /* Added for animation */
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
         }
 
         .analytics-header {
@@ -193,6 +206,11 @@
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             width: 100%;
+            transition: transform 0.3s ease;
+        }
+
+        .live-server-instruction:hover {
+            transform: scale(1.02);
         }
 
         .live-server-instruction h3 {
@@ -208,6 +226,7 @@
             font-family: 'Courier New', monospace;
             font-size: 0.9rem;
             line-height: 1.5;
+            border-left: 3px solid var(--accent-color);
         }
 
         .code-block code {
@@ -222,6 +241,7 @@
             padding: 10px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 5px;
+            backdrop-filter: blur(5px);
         }
 
         .status-indicator {
@@ -231,16 +251,18 @@
             background: #ff4757;
             margin-right: 10px;
             animation: pulse 2s infinite;
+            box-shadow: 0 0 10px #ff4757;
         }
 
         .status-indicator.running {
             background: #2ed573;
+            box-shadow: 0 0 10px #2ed573;
         }
 
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
         /* Games Grid */
@@ -249,6 +271,7 @@
             grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
             gap: 30px;
             margin-bottom: 50px;
+            perspective: 1000px; /* Essential for 3D tilt */
         }
 
         .game-card {
@@ -256,43 +279,65 @@
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
+            /* Modified transition for smooth 3D effect */
+            transition: transform 0.1s ease-out, box-shadow 0.3s; 
+            transform-style: preserve-3d;
+            
+            /* Added for animation */
+            opacity: 0;
+            transform: translateY(50px) rotateX(10deg);
+            transition: opacity 0.8s ease-out, transform 0.6s ease-out, box-shadow 0.3s;
         }
 
         .game-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            /* Transform is handled by JS for 3D effect, but this is fallback/enhancement */
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            z-index: 10;
         }
 
         .game-header {
             padding: 20px;
             text-align: center;
             color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Subtle shimmer on headers */
+        .game-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            animation: shimmer 6s infinite;
         }
 
-        .snake-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        @keyframes shimmer {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
         }
 
-        .plane-header {
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f);
-        }
-
-        .piano-header {
-            background: linear-gradient(135deg, #8E2DE2, #4A00E0);
-        }
-
-        .brick-header {
-            background: linear-gradient(135deg, #ff6b6b, #ffa726);
-        }
+        .snake-header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); }
+        .plane-header { background: linear-gradient(135deg, #1a2a6c, #b21f1f); }
+        .piano-header { background: linear-gradient(135deg, #8E2DE2, #4A00E0); }
+        .brick-header { background: linear-gradient(135deg, #ff6b6b, #ffa726); }
 
         .game-header h2 {
             font-size: 1.8rem;
             margin-bottom: 10px;
+            position: relative;
+            z-index: 2;
         }
 
         .game-body {
             padding: 25px;
+            background: white;
+            transform: translateZ(20px); /* 3D effect depth */
         }
 
         .game-body p {
@@ -319,6 +364,12 @@
             border-bottom: 1px solid #f0f0f0;
             display: flex;
             align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .features-list li:hover {
+            transform: translateX(5px);
+            color: var(--secondary-color);
         }
 
         .features-list li:before {
@@ -337,12 +388,31 @@
             text-decoration: none;
             font-weight: bold;
             margin-top: 20px;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        /* High-end Button Shine Effect */
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+
+        .cta-button:hover::before {
+            left: 100%;
         }
 
         .cta-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
         }
 
         footer {
@@ -374,10 +444,32 @@
             color: white;
             text-decoration: none;
             transition: color 0.3s;
+            position: relative;
+        }
+
+        .footer-links a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background-color: var(--accent-color);
+            transition: width 0.3s ease;
+        }
+
+        .footer-links a:hover::after {
+            width: 100%;
         }
 
         .footer-links a:hover {
             color: var(--accent-color);
+        }
+
+        /* Animation Class to be triggered by JS */
+        .element-visible {
+            opacity: 1 !important;
+            transform: translateY(0) rotateX(0) !important;
         }
 
         @media (max-width: 768px) {
@@ -427,7 +519,6 @@
     </style>
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar">
         <div class="navbar-left">
             <a href="index.html" class="logo">World of Games and Data</a>
@@ -460,7 +551,6 @@
             <p>Explore four unique PC games, each with distinctive gameplay mechanics and features. From classic arcade experiences to innovative interactive applications. The site showcases not only game development but also live data analytics, statistical reporting, and machine learning insights - highlighting a portfolio of coding and data science.</p>
         </div>
         
-        <!-- Analytics Section -->
         <div class="analytics-section">
             <div class="analytics-header">
                 <h2>Flappy Plane Analytics System</h2>
@@ -488,7 +578,6 @@
                 </div>
                 
                 <div class="analytics-image">
-                    <!-- Live Server Instruction -->
                     <div class="live-server-instruction">
                         <h3><i class="fas fa-server"></i> Live Analytics Dashboard</h3>
                         <p>To view live analytics data, clone the repo and start the Python server:</p>
@@ -516,8 +605,7 @@
             </div>
         </div>
         
-                <!-- Quarto Business Analytics Section -->
-        <div class="analytics-section">
+                <div class="analytics-section">
             <div class="analytics-header">
                 <h2>Analysis Report From Flappy Plane</h2>
                 <p>From raw data to predictive insights with statistical bootstrapping</p>
@@ -544,7 +632,6 @@
                 </div>
                 
                 <div class="analytics-image">
-                    <!-- Quarto Analytics Instruction -->
                     <div class="live-server-instruction" style="background: linear-gradient(135deg, #8E2DE2, #4A00E0);">
                         <h3><i class="fas fa-chart-line"></i> Analysis Report</h3>
                         <p>Analytics with machine learning insights:</p>
@@ -575,9 +662,7 @@
             </div>
         </div>
 
-        <!-- Games Grid -->
         <div class="games-grid">
-            <!-- Snake Game Card -->
             <div class="game-card">
                 <div class="game-header snake-header">
                     <h2>Neon Snake</h2>
@@ -602,7 +687,6 @@
                 </div>
             </div>
             
-            <!-- Plane Game Card -->
             <div class="game-card">
                 <div class="game-header plane-header">
                     <h2>Flappy Plane Adventure</h2>
@@ -627,7 +711,6 @@
                 </div>
             </div>
             
-            <!-- Piano Game Card -->
             <div class="game-card">
                 <div class="game-header piano-header">
                     <h2>Interactive Piano & Cat Game</h2>
@@ -652,7 +735,6 @@
                 </div>
             </div>
             
-            <!-- Brick Breaker Game Card -->
             <div class="game-card">
                 <div class="game-header brick-header">
                     <h2>Neon Brick Breaker</h2>
@@ -689,7 +771,7 @@
                 <li><a href="analysis.html">Analysis</a></li>
                 <li><a href="about.html">About Me</a></li>
             </ul>
-            <p>&copy; 2023 World of Games. All rights reserved.</p>
+            <p>&copy; 2025 World of Games and Data. All rights reserved.</p>
         </div>
     </footer>
 
@@ -713,6 +795,58 @@
             }
         }
         
+        // ============================================
+        // HIGH-END VISUAL EFFECTS SCRIPTS
+        // ============================================
+
+        // 1. Scroll Reveal Animation (Intersection Observer)
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('element-visible');
+                    revealObserver.unobserve(entry.target); // Only animate once
+                }
+            });
+        }, {
+            threshold: 0.15 // Trigger when 15% of element is visible
+        });
+
+        // Target elements to animate
+        document.querySelectorAll('.page-header, .analytics-section, .game-card').forEach(el => {
+            revealObserver.observe(el);
+        });
+
+        // 2. High-end 3D Tilt Effect for Game Cards
+        const cards = document.querySelectorAll('.game-card');
+        
+        cards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Calculate percentage
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                // Limit tilt angle (max 10 degrees)
+                const rotateX = ((y - centerY) / centerY) * -10;
+                const rotateY = ((x - centerX) / centerX) * 10;
+                
+                // Apply transform
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                
+                // Adjust shimmer/reflection based on mouse
+                card.style.boxShadow = `${-rotateY}px ${rotateX}px 20px rgba(0,0,0,0.2)`;
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                // Reset transform
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+                card.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.1)';
+            });
+        });
+
         // Check server status when page loads
         document.addEventListener('DOMContentLoaded', checkServerStatus);
     </script>

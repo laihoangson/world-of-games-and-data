@@ -7,7 +7,9 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Add this to your existing CSS */
+        /* =========================================
+           PHẦN CSS GỐC (GIỮ NGUYÊN)
+           ========================================= */
         .analytics-listing {
             display: grid;
             gap: 20px;
@@ -191,10 +193,52 @@
             font-size: 0.8em;
             font-weight: bold;
         }
+
+        /* =========================================
+           PHẦN CSS ANIMATION (MỚI THÊM)
+           ========================================= */
+
+        /* 1. Định nghĩa chuyển động: Trượt nhẹ từ dưới lên và hiện ra */
+        @keyframes slideInUpFade {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 2. Áp dụng cho Tiêu đề (Hiện đầu tiên) */
+        .section-title {
+            opacity: 0;
+            animation: slideInUpFade 0.7s ease-out forwards;
+            animation-delay: 0.1s;
+        }
+
+        /* 3. Áp dụng cho từng thẻ Analytics Card (Hiện kế tiếp) */
+        .analytics-card {
+            opacity: 0;
+            animation: slideInUpFade 0.7s ease-out forwards;
+        }
+        
+        /* Chỉnh delay cho từng thẻ card để chúng hiện so le */
+        .analytics-card:nth-child(1) { animation-delay: 0.3s; }
+        .analytics-card:nth-child(2) { animation-delay: 0.5s; }
+        /* Nếu sau này có thêm thẻ thứ 3, 4 thì thêm dòng này:
+           .analytics-card:nth-child(3) { animation-delay: 0.7s; } */
+
+        /* 4. Áp dụng cho khối Server Setup (Hiện cuối cùng) */
+        .server-setup-container {
+            opacity: 0;
+            animation: slideInUpFade 0.7s ease-out forwards;
+            animation-delay: 0.7s;
+        }
+
     </style>
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar">
         <div class="navbar-left">
             <a href="index.html" class="logo">World of Games and Data</a>
@@ -222,12 +266,10 @@
         </div>
     </nav>
 
-    <!-- Analytics Content -->
     <section class="content-section">
         <h2 class="section-title">Game Analytics Hub</h2>
         
         <div class="analytics-listing">
-            <!-- Flappy Plane Analytics Card -->
             <a href="analytics/analysis_plane.html" class="analytics-card">
                 <span class="status-indicator-small status-setup">REQUIRES SERVER</span>
                 <h3>🚀 Flappy Plane Adventure Analytics Dashboard</h3>
@@ -238,7 +280,6 @@
                 </div>
             </a>
 
-            <!-- Quarto Analytics Card -->
             <a href="quarto_analysis/game_analytics.html" class="analytics-card">
                 <span class="status-indicator-small status-live">READY TO VIEW</span>
                 <h3>📊 Game Analytics: From EDA to Predictive Modeling</h3>
@@ -250,11 +291,9 @@
             </a>
         </div>
 
-        <!-- Gộp Setup Instructions và Server Status -->
         <div class="server-setup-container">
             <h3>🚀 Server Setup & Status</h3>
             <div class="setup-content">
-                <!-- Setup Instructions -->
                 <div class="setup-instructions">
                     <h4>📋 Setup Instructions</h4>
                     <p>To view live Flappy Plane analytics, start the Python server:</p>
@@ -269,7 +308,6 @@
                     </ol>
                 </div>
 
-                <!-- Server Status -->
                 <div class="server-status">
                     <h4>🔧 Server Status</h4>
                     <div class="status-indicator" id="serverStatusIndicator">CHECKING...</div>
