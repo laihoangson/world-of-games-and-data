@@ -77,6 +77,8 @@ conflicts_prefer(ggplot2::margin)
 set.seed(123)
 ```
 
+![](game.jpg)
+
 ## Introduction
 
 The modern gaming landscape is fiercely competitive, where player retention and engagement are the ultimate currencies. Success is no longer solely determined by creative design and immersive gameplay but increasingly by the ability to understand and adapt to player behavior. This project, "Game Analytics: From Exploratory Data Analysis to Predictive Modeling," demonstrates this data-driven paradigm by conducting a comprehensive analysis of Flappy Plane Adventure, a dynamic side-scrolling shooter.
